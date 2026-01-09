@@ -5,6 +5,8 @@ import { z } from "zod";
 // === TABLE DEFINITIONS ===
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
   codeName: text("code_name").notNull(),
   rank: text("rank").default("Operatör").notNull(),
   status: text("status").default("Çevrimiçi").notNull(),
@@ -16,7 +18,7 @@ export const users = pgTable("users", {
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(), 
-  parentId: integer("parent_id"), // For replies
+  parentId: integer("parent_id"), 
   content: text("content"),
   isImage: boolean("is_image").default(false),
   imageUrl: text("image_url"),
@@ -53,3 +55,9 @@ export type MessageWithUser = Message & {
 
 export type CreateMessageRequest = InsertMessage;
 export type UpdateProfileRequest = Partial<InsertUser>;
+
+export const loginSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
+});
+export type LoginRequest = z.infer<typeof loginSchema>;

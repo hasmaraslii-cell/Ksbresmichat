@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertUserSchema, insertMessageSchema, users, messages, intelLinks } from './schema';
+import { insertUserSchema, insertMessageSchema, users, messages, intelLinks, loginSchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -9,26 +9,58 @@ export const errorSchemas = {
   notFound: z.object({
     message: z.string(),
   }),
+  unauthorized: z.object({
+    message: z.string(),
+  }),
   internal: z.object({
     message: z.string(),
   }),
 };
 
 export const api = {
+  auth: {
+    register: {
+      method: 'POST' as const,
+      path: '/api/register',
+      input: insertUserSchema,
+      responses: {
+        201: z.custom<typeof users.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    login: {
+      method: 'POST' as const,
+      path: '/api/login',
+      input: loginSchema,
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        401: errorSchemas.unauthorized,
+      },
+    },
+    logout: {
+      method: 'POST' as const,
+      path: '/api/logout',
+      responses: {
+        200: z.object({ success: z.boolean() }),
+      },
+    },
+  },
   users: {
     me: {
       method: 'GET' as const,
       path: '/api/users/me',
       responses: {
         200: z.custom<typeof users.$inferSelect>(),
+        401: errorSchemas.unauthorized,
       },
     },
     update: {
       method: 'PATCH' as const,
       path: '/api/users/me',
-      input: insertUserSchema.partial(),
+      input: insertUserSchema.partial().omit({ username: true, password: true }),
       responses: {
         200: z.custom<typeof users.$inferSelect>(),
+        401: errorSchemas.unauthorized,
       },
     }
   },
@@ -37,7 +69,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/messages',
       responses: {
-        200: z.array(z.custom<any>()), // Simplified for deep nesting
+        200: z.array(z.custom<any>()),
       },
     },
     send: {

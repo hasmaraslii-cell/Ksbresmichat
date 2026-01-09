@@ -8,17 +8,12 @@ import {
 import { eq, desc, asc } from "drizzle-orm";
 
 export interface IStorage {
-  // User
   getUser(id: number): Promise<User | undefined>;
-  getAnyUser(): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User>;
-
-  // Messages
   getMessages(): Promise<MessageWithUser[]>;
   createMessage(message: InsertMessage): Promise<Message>;
-
-  // Intel
   getIntelLinks(): Promise<IntelLink[]>;
   seedIntelLinks(): Promise<void>;
   seedUsers(): Promise<void>;
@@ -30,8 +25,8 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getAnyUser(): Promise<User | undefined> {
-    const [user] = await db.select().from(users).limit(1);
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
 
@@ -88,10 +83,10 @@ export class DatabaseStorage implements IStorage {
     const count = await db.select().from(intelLinks);
     if (count.length === 0) {
       await db.insert(intelLinks).values([
-        { code: "[REQ_SEC_01]", label: "TurkHackTeam", url: "https://www.turkhackteam.org", category: "security" },
-        { code: "[REQ_SEC_02]", label: "BreachForums", url: "#", category: "intel" },
-        { code: "[OP_LOG_99]", label: "Operasyon Kayıtları", url: "#", category: "logs" },
-        { code: "[SYS_STAT]", label: "Sistem Durumu", url: "#", category: "system" },
+        { code: "[REQ_SEC_01]", label: "TurkHackTeam Duyuruları", url: "https://www.turkhackteam.org", category: "security" },
+        { code: "[OP_INTEL_01]", label: "Sızma Testi Raporu - Delta", url: "#", category: "intel" },
+        { code: "[OP_LOG_99]", label: "Şifrelenmiş Operasyon Günlükleri", url: "#", category: "logs" },
+        { code: "[SYS_STAT]", label: "Merkezi İşlem Birimi Durumu", url: "#", category: "system" },
       ]);
     }
   }
@@ -100,8 +95,15 @@ export class DatabaseStorage implements IStorage {
     const count = await db.select().from(users);
     if (count.length === 0) {
       await db.insert(users).values([
-        { codeName: "Gölge_01", rank: "Kıdemli Operatör", status: "Çevrimiçi", isVerified: true },
-        { codeName: "Komuta", rank: "Admin", status: "Gizli", isVerified: true },
+        { 
+          username: "admin", 
+          password: "password123", 
+          codeName: "Komuta", 
+          rank: "Sistem Yöneticisi", 
+          status: "Gizli", 
+          isVerified: true,
+          bio: "KSB Sistem Kontrol Birimi"
+        },
       ]);
     }
   }
