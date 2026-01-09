@@ -6,7 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
-export function DMView() {
+export function DMView({ onStartChat }: { onStartChat?: () => void }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: friendsList = [] } = useQuery({
@@ -78,11 +78,22 @@ export function DMView() {
                 <AvatarImage src={f.avatarUrl} />
                 <AvatarFallback>{f.username.substring(0, 2)}</AvatarFallback>
               </Avatar>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-bold">{f.username}</p>
-                <p className="text-[10px] text-muted-foreground uppercase">{f.fullName && `${f.fullName} • `}{f.friendStatus === 'accepted' ? 'Arkadaş' : 'İstek Bekliyor'}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">{f.displayName && `${f.displayName} • `}{f.friendStatus === 'accepted' ? 'Arkadaş' : 'İstek Bekliyor'}</p>
                 {f.bio && <p className="text-[10px] text-muted-foreground italic mt-1">{f.bio}</p>}
               </div>
+              {f.friendStatus === 'accepted' && (
+                <button 
+                  onClick={() => {
+                    onStartChat?.();
+                    toast({ title: "Sohbet başlatılıyor", description: `${f.username} ile sohbet açılıyor...` });
+                  }}
+                  className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
+              )}
             </div>
             {f.friendStatus === 'pending' && (
               <div className="flex gap-2">

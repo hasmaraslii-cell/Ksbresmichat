@@ -73,7 +73,11 @@ export async function registerRoutes(
     const userId = req.session.userId;
     if (!userId) return res.status(401).json({ message: "Yetkisiz" });
     try {
-      const input = api.users.update.input.parse(req.body);
+      const input = req.body;
+      if (input.username) {
+        const existing = await storage.getUserByUsername(input.username);
+        if (existing && existing.id !== userId) return res.status(400).json({ message: "Kullanıcı adı alınmış" });
+      }
       const updated = await storage.updateUser(userId, input);
       res.json(updated);
     } catch (err) {

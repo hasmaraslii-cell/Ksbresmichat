@@ -15,14 +15,14 @@ export function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [formData, setFormData] = useState({ username: "", bio: "", avatarUrl: "", fullName: "" });
+  const [formData, setFormData] = useState({ username: "", bio: "", avatarUrl: "", displayName: "" });
 
   useEffect(() => { 
     if (user) setFormData({ 
       username: user.username || "", 
       bio: user.bio || "", 
       avatarUrl: user.avatarUrl || "",
-      fullName: (user as any).fullName || ""
+      displayName: (user as any).displayName || ""
     }); 
   }, [user]);
 
@@ -76,11 +76,11 @@ export function Settings() {
           </button>
           <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={handleFile} />
         </div>
-        <div className="text-center"><h2 className="text-xl font-bold">{formData.username}</h2><p className="text-xs text-muted-foreground uppercase tracking-widest">AKTİF KULLANICI</p></div>
+        <div className="text-center"><h2 className="text-xl font-bold">{formData.displayName || formData.username}</h2><p className="text-xs text-muted-foreground uppercase tracking-widest">AKTİF KULLANICI</p></div>
       </div>
       <div className="space-y-4 flex-1">
-        <div className="space-y-1"><label className="text-[10px] font-bold text-muted-foreground uppercase">Tam İsim</label><Input value={formData.fullName} onChange={e => setFormData(p => ({ ...p, fullName: e.target.value }))} className="bg-[#1a1a1a] border-none rounded-xl h-12" placeholder="Tam isminizi girin" /></div>
-        <div className="space-y-1"><label className="text-[10px] font-bold text-muted-foreground uppercase">Kullanıcı Adı</label><Input value={formData.username} readOnly className="bg-[#1a1a1a] border-none rounded-xl h-12 opacity-50" /></div>
+        <div className="space-y-1"><label className="text-[10px] font-bold text-muted-foreground uppercase">Görünen İsim</label><Input value={formData.displayName} onChange={e => setFormData(p => ({ ...p, displayName: e.target.value }))} className="bg-[#1a1a1a] border-none rounded-xl h-12" placeholder="Görünen isminizi girin" /></div>
+        <div className="space-y-1"><label className="text-[10px] font-bold text-muted-foreground uppercase">Kullanıcı Adı</label><Input value={formData.username} onChange={e => setFormData(p => ({ ...p, username: e.target.value }))} className="bg-[#1a1a1a] border-none rounded-xl h-12" /></div>
         <div className="space-y-1"><label className="text-[10px] font-bold text-muted-foreground uppercase">Biyografi</label><Textarea value={formData.bio} onChange={e => setFormData(p => ({ ...p, bio: e.target.value }))} className="bg-[#1a1a1a] border-none rounded-xl h-32" /></div>
         <Button onClick={handleSave} className="w-full bg-white text-black rounded-xl h-12 font-bold uppercase">PROFİLİ KAYDET</Button>
         <Button onClick={() => logoutMutation.mutate()} variant="destructive" className="w-full rounded-xl h-12 font-bold uppercase flex items-center justify-center gap-2">

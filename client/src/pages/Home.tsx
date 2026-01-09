@@ -31,7 +31,7 @@ export default function Home() {
             </div>
           </>
         )}
-        {activeTab === "dm" && <DMView />}
+        {activeTab === "dm" && <DMView onStartChat={() => setActiveTab("chat")} />}
         {activeTab === "settings" && <Settings />}
       </div>
 
