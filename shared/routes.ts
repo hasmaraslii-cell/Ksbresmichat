@@ -2,19 +2,10 @@ import { z } from 'zod';
 import { insertUserSchema, insertMessageSchema, users, messages, intelLinks, loginSchema } from './schema';
 
 export const errorSchemas = {
-  validation: z.object({
-    message: z.string(),
-    field: z.string().optional(),
-  }),
-  notFound: z.object({
-    message: z.string(),
-  }),
-  unauthorized: z.object({
-    message: z.string(),
-  }),
-  internal: z.object({
-    message: z.string(),
-  }),
+  validation: z.object({ message: z.string(), field: z.string().optional() }),
+  notFound: z.object({ message: z.string() }),
+  unauthorized: z.object({ message: z.string() }),
+  internal: z.object({ message: z.string() }),
 };
 
 export const api = {
@@ -40,9 +31,7 @@ export const api = {
     logout: {
       method: 'POST' as const,
       path: '/api/logout',
-      responses: {
-        200: z.object({ success: z.boolean() }),
-      },
+      responses: { 200: z.object({ success: z.boolean() }) },
     },
   },
   users: {
@@ -68,9 +57,7 @@ export const api = {
     list: {
       method: 'GET' as const,
       path: '/api/messages',
-      responses: {
-        200: z.array(z.custom<any>()),
-      },
+      responses: { 200: z.array(z.custom<any>()) },
     },
     send: {
       method: 'POST' as const,
@@ -80,14 +67,31 @@ export const api = {
         201: z.custom<typeof messages.$inferSelect>(),
       },
     },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/messages/:id',
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        403: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/messages/:id',
+      input: z.object({ content: z.string().min(1) }),
+      responses: {
+        200: z.custom<typeof messages.$inferSelect>(),
+        403: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
   },
   intel: {
     list: {
       method: 'GET' as const,
       path: '/api/intel',
-      responses: {
-        200: z.array(z.custom<typeof intelLinks.$inferSelect>()),
-      },
+      responses: { 200: z.array(z.custom<typeof intelLinks.$inferSelect>()) },
     },
   }
 };

@@ -2,7 +2,6 @@ import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// === TABLE DEFINITIONS ===
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -13,6 +12,7 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   bio: text("bio"),
   isVerified: boolean("is_verified").default(false),
+  isAdmin: boolean("is_admin").default(false),
 });
 
 export const messages = pgTable("messages", {
@@ -34,27 +34,20 @@ export const intelLinks = pgTable("intel_links", {
   category: text("category").default("general"),
 });
 
-// === BASE SCHEMAS ===
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, isVerified: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, isVerified: true, isAdmin: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertIntelLinkSchema = createInsertSchema(intelLinks).omit({ id: true });
 
-// === EXPLICIT API CONTRACT TYPES ===
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
-
 export type IntelLink = typeof intelLinks.$inferSelect;
 
 export type MessageWithUser = Message & { 
   sender: User;
   replyTo?: Message & { sender: User };
 };
-
-export type CreateMessageRequest = InsertMessage;
-export type UpdateProfileRequest = Partial<InsertUser>;
 
 export const loginSchema = z.object({
   username: z.string().min(1),

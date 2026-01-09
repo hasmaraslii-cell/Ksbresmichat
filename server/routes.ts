@@ -1,10 +1,10 @@
-import session from "express-session";
-import createMemoryStore from "memorystore";
 import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import session from "express-session";
+import createMemoryStore from "memorystore";
 
 const MemoryStore = createMemoryStore(session);
 
@@ -12,16 +12,13 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Seed data on startup
   await storage.seedUsers();
   await storage.seedIntelLinks();
 
   app.use(
     session({
       cookie: { maxAge: 86400000 },
-      store: new MemoryStore({
-        checkPeriod: 86400000 // prune expired entries every 24h
-      }),
+      store: new MemoryStore({ checkPeriod: 86400000 }),
       resave: false,
       saveUninitialized: false,
       secret: process.env.SESSION_SECRET || "ksb-secret",
@@ -32,93 +29,104 @@ export async function registerRoutes(
     try {
       const input = api.auth.register.input.parse(req.body);
       const existing = await storage.getUserByUsername(input.username);
-      if (existing) {
-        return res.status(400).json({ message: "Kullanıcı adı zaten alınmış" });
-      }
+      if (existing) return res.status(400).json({ message: "Kullanıcı adı alınmış" });
       const user = await storage.createUser(input);
       // @ts-ignore
       req.session.userId = user.id;
       res.status(201).json(user);
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: err.errors[0].message });
-      }
-      res.status(500).json({ message: "Sunucu hatası" });
+      res.status(400).json({ message: "Geçersiz veriler" });
     }
   });
 
   app.post(api.auth.login.path, async (req, res) => {
-    const input = api.auth.login.input.parse(req.body);
-    const user = await storage.getUserByUsername(input.username);
-    if (!user || user.password !== input.password) {
-      return res.status(401).json({ message: "Geçersiz kullanıcı adı veya şifre" });
+    try {
+      const input = api.auth.login.input.parse(req.body);
+      const user = await storage.getUserByUsername(input.username);
+      if (!user || user.password !== input.password) {
+        return res.status(401).json({ message: "Geçersiz giriş" });
+      }
+      // @ts-ignore
+      req.session.userId = user.id;
+      res.json(user);
+    } catch (err) {
+      res.status(400).json({ message: "Giriş hatası" });
     }
-    // @ts-ignore
-    req.session.userId = user.id;
-    res.json(user);
   });
 
   app.post(api.auth.logout.path, (req, res) => {
-    req.session.destroy((err) => {
-      if (err) return res.status(500).json({ message: "Çıkış yapılamadı" });
-      res.json({ success: true });
-    });
+    req.session.destroy(() => res.json({ success: true }));
   });
 
   app.get(api.users.me.path, async (req, res) => {
     // @ts-ignore
-    const userId = req.session.userId;
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
-    const user = await storage.getUser(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!req.session.userId) return res.status(401).json({ message: "Giriş yapın" });
+    // @ts-ignore
+    const user = await storage.getUser(req.session.userId);
+    if (!user) return res.status(404).json({ message: "Bulunamadı" });
     res.json(user);
   });
 
   app.patch(api.users.update.path, async (req, res) => {
     // @ts-ignore
-    const userId = req.session.userId;
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
+    if (!req.session.userId) return res.status(401).json({ message: "Yetkisiz" });
     try {
       const input = api.users.update.input.parse(req.body);
-      const updated = await storage.updateUser(userId, input);
+      // @ts-ignore
+      const updated = await storage.updateUser(req.session.userId, input);
       res.json(updated);
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: err.errors[0].message });
-      }
-      res.status(500).json({ message: "Güncelleme hatası" });
+      res.status(400).json({ message: "Hata" });
     }
   });
 
   app.get(api.messages.list.path, async (req, res) => {
-    const messages = await storage.getMessages();
-    res.json(messages);
+    res.json(await storage.getMessages());
   });
 
   app.post(api.messages.send.path, async (req, res) => {
+    // @ts-ignore
+    if (!req.session.userId) return res.status(401).json({ message: "Giriş yapın" });
     try {
-      // @ts-ignore
-      const userId = req.session.userId;
-      if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
       const input = api.messages.send.input.parse(req.body);
-      const message = await storage.createMessage({
-        ...input,
-        userId: userId
-      });
+      // @ts-ignore
+      const message = await storage.createMessage({ ...input, userId: req.session.userId });
       res.status(201).json(message);
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: err.errors[0].message });
-      }
-      res.status(500).json({ message: "Mesaj gönderilemedi" });
+      res.status(400).json({ message: "Gönderilemedi" });
     }
   });
 
+  app.delete(api.messages.delete.path, async (req, res) => {
+    // @ts-ignore
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Yetkisiz" });
+    const user = await storage.getUser(userId);
+    const msgId = parseInt(req.params.id);
+    const msg = await storage.getMessage(msgId);
+    if (!msg) return res.status(404).json({ message: "Mesaj yok" });
+    if (user?.isAdmin || msg.userId === userId) {
+      await storage.deleteMessage(msgId);
+      return res.json({ success: true });
+    }
+    res.status(403).json({ message: "Yetersiz yetki" });
+  });
+
+  app.patch(api.messages.update.path, async (req, res) => {
+    // @ts-ignore
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Yetkisiz" });
+    const msgId = parseInt(req.params.id);
+    const msg = await storage.getMessage(msgId);
+    if (!msg) return res.status(404).json({ message: "Mesaj yok" });
+    if (msg.userId !== userId) return res.status(403).json({ message: "Kendi mesajın değil" });
+    const input = api.messages.update.input.parse(req.body);
+    const updated = await storage.updateMessage(msgId, input.content);
+    res.json(updated);
+  });
+
   app.get(api.intel.list.path, async (req, res) => {
-    const links = await storage.getIntelLinks();
-    res.json(links);
+    res.json(await storage.getIntelLinks());
   });
 
   return httpServer;
