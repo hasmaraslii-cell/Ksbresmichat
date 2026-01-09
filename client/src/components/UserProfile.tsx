@@ -1,5 +1,6 @@
 import { useCurrentUser } from "@/hooks/use-ksb";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { ShieldCheck } from "lucide-react";
 
 export function UserProfile() {
   const { data: user } = useCurrentUser();
@@ -17,8 +18,11 @@ export function UserProfile() {
             </AvatarFallback>
           </Avatar>
           <div>
-            <h2 className="text-sm font-bold tracking-tight">{user.codeName}</h2>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{user.rank}</p>
+            <div className="flex items-center gap-1">
+              <h2 className="text-sm font-bold tracking-tight">{user.codeName}</h2>
+              {user.isAdmin && <ShieldCheck className="w-3 h-3 text-blue-400" />}
+            </div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">AKTİF OPERATÖR</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 rounded-full">

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
-import { Camera } from "lucide-react";
+import { Camera, LogOut } from "lucide-react";
 
 export function Settings() {
   const { data: user } = useCurrentUser();
@@ -23,8 +23,12 @@ export function Settings() {
     mutationFn: async () => {
       const res = await fetch(api.auth.logout.path, { method: "POST" });
       if (!res.ok) throw new Error("Çıkış hatası");
+      return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.users.me.path] })
+    onSuccess: () => {
+      queryClient.setQueryData([api.users.me.path], null);
+      queryClient.invalidateQueries({ queryKey: [api.users.me.path] });
+    }
   });
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,7 +42,12 @@ export function Settings() {
   };
 
   const handleSave = () => {
-    updateProfile(formData, { onSuccess: () => toast({ title: "Profil güncellendi" }) });
+    updateProfile(formData, { 
+      onSuccess: () => {
+        toast({ title: "Profil güncellendi" });
+        queryClient.invalidateQueries({ queryKey: [api.users.me.path] });
+      } 
+    });
   };
 
   if (!user) return null;
@@ -59,13 +68,15 @@ export function Settings() {
           </button>
           <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={handleFile} />
         </div>
-        <div className="text-center"><h2 className="text-xl font-bold">{formData.codeName}</h2><p className="text-xs text-muted-foreground uppercase tracking-widest">{user.rank}</p></div>
+        <div className="text-center"><h2 className="text-xl font-bold">{formData.codeName}</h2><p className="text-xs text-muted-foreground uppercase tracking-widest">AKTİF OPERATÖR</p></div>
       </div>
       <div className="space-y-4 flex-1">
         <div className="space-y-1"><label className="text-[10px] font-bold text-muted-foreground uppercase">Kod Adı</label><Input value={formData.codeName} onChange={e => setFormData(p => ({ ...p, codeName: e.target.value }))} className="bg-[#1a1a1a] border-none rounded-xl h-12" /></div>
         <div className="space-y-1"><label className="text-[10px] font-bold text-muted-foreground uppercase">Biyografi</label><Textarea value={formData.bio} onChange={e => setFormData(p => ({ ...p, bio: e.target.value }))} className="bg-[#1a1a1a] border-none rounded-xl h-32" /></div>
         <Button onClick={handleSave} className="w-full bg-white text-black rounded-xl h-12 font-bold uppercase">PROFİLİ KAYDET</Button>
-        <Button onClick={() => logoutMutation.mutate()} variant="destructive" className="w-full rounded-xl h-12 font-bold uppercase">GÜVENLİ ÇIKIŞ</Button>
+        <Button onClick={() => logoutMutation.mutate()} variant="destructive" className="w-full rounded-xl h-12 font-bold uppercase flex items-center justify-center gap-2">
+          <LogOut className="w-4 h-4" /> GÜVENLİ ÇIKIŞ
+        </Button>
       </div>
       <div className="pt-8 text-center"><p className="text-xs text-[#c0c0c0] font-light tracking-[0.3em] uppercase opacity-40">Görünmez Ordunun Bilinmez Askerleri</p></div>
     </div>

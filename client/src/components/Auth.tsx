@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import logoUrl from "@assets/New_Project_[8086C82]_1767973230461.png";
 
 export function Auth() {
   const [isLogin, setIsLogin] = useState(true);
-  const [form, setForm] = useState({ username: "", password: "", codeName: "" });
+  const [form, setForm] = useState({ username: "", password: "", codeName: "Operatör" });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -37,7 +37,6 @@ export function Auth() {
         <h1 className="text-2xl font-bold text-center tracking-widest">{isLogin ? "GİRİŞ YAP" : "KAYIT OL"}</h1>
         <Input placeholder="Kullanıcı Adı" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} className="bg-[#1a1a1a] border-none h-12" />
         <Input type="password" placeholder="Şifre" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="bg-[#1a1a1a] border-none h-12" />
-        {!isLogin && <Input placeholder="Kod Adı" value={form.codeName} onChange={e => setForm(f => ({ ...f, codeName: e.target.value }))} className="bg-[#1a1a1a] border-none h-12" />}
         <Button onClick={() => mutation.mutate(form)} className="w-full h-12 bg-white text-black font-bold uppercase" disabled={mutation.isPending}>
           {isLogin ? "Giriş Yap" : "Kayıt Ol"}
         </Button>
@@ -48,3 +47,5 @@ export function Auth() {
     </div>
   );
 }
+
+import { useState } from "react";

@@ -7,7 +7,6 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   codeName: text("code_name").notNull(),
-  rank: text("rank").default("Operatör").notNull(),
   status: text("status").default("Çevrimiçi").notNull(),
   avatarUrl: text("avatar_url"),
   bio: text("bio"),

@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useCurrentUser, useMessages, useSendMessage } from "@/hooks/use-ksb";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Paperclip, X, Trash2, Edit2, Download, ExternalLink } from "lucide-react";
+import { Send, Paperclip, X, Trash2, Edit2, Download, ExternalLink, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -113,8 +113,15 @@ export function ChatInterface() {
               animate={{ opacity: 1, x: 0 }}
               className={cn("flex items-end gap-2 max-w-[85%]", isMe ? "ml-auto flex-row-reverse" : "mr-auto group")}
             >
-              {!isMe && <Avatar className="w-8 h-8"><AvatarImage src={msg.sender.avatarUrl} /><AvatarFallback className="text-[10px]">{msg.sender.codeName.substring(0, 2)}</AvatarFallback></Avatar>}
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={msg.sender.avatarUrl} />
+                <AvatarFallback className="text-[10px]">{msg.sender.codeName.substring(0, 2)}</AvatarFallback>
+              </Avatar>
               <div className="flex flex-col">
+                <div className="flex items-center gap-1 mb-0.5 px-1">
+                  <span className="text-[10px] font-bold text-muted-foreground">{msg.sender.codeName}</span>
+                  {msg.sender.isAdmin && <ShieldCheck className="w-3 h-3 text-blue-400" />}
+                </div>
                 <div className={cn("p-3 rounded-2xl text-[15px]", isMe ? "bg-white text-black rounded-br-none" : "bg-[#1a1a1a] text-white rounded-bl-none")} onClick={() => setReplyingTo(msg)}>
                   {msg.replyTo && <div className="mb-2 p-2 bg-black/10 rounded-lg border-l-2 border-white/30 text-xs opacity-70"><p className="font-bold">{msg.replyTo.sender.codeName}</p><p className="truncate">{msg.replyTo.content || "Görsel"}</p></div>}
                   {msg.isImage && (
