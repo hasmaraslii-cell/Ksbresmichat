@@ -59,8 +59,8 @@ export class DatabaseStorage implements IStorage {
         (m.message.userId === targetId && m.message.receiverId === currentUserId)
       );
     } else {
-      // Group: messages where receiverId is null
-      filteredMessages = messagesData.filter(m => m.message.receiverId === null);
+      // Group: messages where receiverId is null OR undefined
+      filteredMessages = messagesData.filter(m => !m.message.receiverId);
     }
     
     // Limit frontend load to last 100
