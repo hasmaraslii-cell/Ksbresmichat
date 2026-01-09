@@ -1,40 +1,59 @@
-import { useState } from "react";
-import { SplashScreen } from "@/components/SplashScreen";
+import { useState, useEffect } from "react";
 import { UserProfile } from "@/components/UserProfile";
 import { ChatInterface } from "@/components/ChatInterface";
 import { IntelPanel } from "@/components/IntelPanel";
-import { MatrixRain } from "@/components/MatrixRain";
+import { Settings } from "@/components/Settings";
+import { MessageSquare, Settings as SettingsIcon, Shield } from "lucide-react";
 
 export default function Home() {
-  const [showSplash, setShowSplash] = useState(true);
-
-  if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  }
+  const [activeTab, setActiveTab] = useState<"chat" | "settings" | "birlik">("chat");
 
   return (
-    <div className="h-screen w-full flex flex-col bg-black text-primary overflow-hidden relative scanline">
-      {/* Background Effect */}
-      <div className="absolute inset-0 z-0">
-        <MatrixRain />
+    <div className="h-screen w-full flex flex-col bg-black text-foreground overflow-hidden">
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-hidden relative flex flex-col max-w-md mx-auto w-full">
+        {activeTab === "chat" && (
+          <>
+            <UserProfile />
+            <div className="flex-1 overflow-hidden">
+              <ChatInterface />
+            </div>
+          </>
+        )}
+        {activeTab === "settings" && <Settings />}
+        {activeTab === "birlik" && <IntelPanel />}
       </div>
-      
-      {/* Main Content */}
-      <div className="relative z-10 flex flex-col h-full max-w-md mx-auto w-full border-x border-primary/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-black/80 backdrop-blur-sm">
-        
-        {/* Header */}
-        <UserProfile />
-        
-        {/* Chat Area - Takes remaining space */}
-        <div className="flex-1 overflow-hidden relative">
-          <ChatInterface />
-        </div>
-        
-        {/* Bottom Intel Panel */}
-        <div className="shrink-0 z-20">
-          <IntelPanel />
-        </div>
-      </div>
+
+      {/* Modern Bottom Navigation */}
+      <nav className="shrink-0 bg-[#0a0a0a] border-t border-border flex items-center justify-around pb-safe h-16 max-w-md mx-auto w-full px-6">
+        <button
+          onClick={() => setActiveTab("chat")}
+          className={`flex flex-col items-center gap-1 transition-colors ${
+            activeTab === "chat" ? "text-white" : "text-muted-foreground"
+          }`}
+        >
+          <MessageSquare className="w-6 h-6" />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Sohbet</span>
+        </button>
+        <button
+          onClick={() => setActiveTab("birlik")}
+          className={`flex flex-col items-center gap-1 transition-colors ${
+            activeTab === "birlik" ? "text-white" : "text-muted-foreground"
+          }`}
+        >
+          <Shield className="w-6 h-6" />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Birlik</span>
+        </button>
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={`flex flex-col items-center gap-1 transition-colors ${
+            activeTab === "settings" ? "text-white" : "text-muted-foreground"
+          }`}
+        >
+          <SettingsIcon className="w-6 h-6" />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Ayarlar</span>
+        </button>
+      </nav>
     </div>
   );
 }

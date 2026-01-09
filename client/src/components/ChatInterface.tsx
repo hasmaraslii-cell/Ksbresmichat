@@ -1,10 +1,11 @@
 import { useRef, useEffect, useState } from "react";
 import { useCurrentUser, useMessages, useSendMessage } from "@/hooks/use-ksb";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Paperclip, Image as ImageIcon, ShieldAlert, X } from "lucide-react";
+import { Send, Paperclip, X } from "lucide-react";
 import { format } from "date-fns";
-import clsx from "clsx";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 export function ChatInterface() {
   const { data: user } = useCurrentUser();
@@ -13,9 +14,9 @@ export function ChatInterface() {
   
   const [inputText, setInputText] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
@@ -28,94 +29,77 @@ export function ChatInterface() {
     sendMessage({
       userId: user.id,
       content: inputText,
+      parentId: replyingTo?.id || undefined,
       isImage: !!selectedImage,
       imageUrl: selectedImage || undefined,
-      operationNote: selectedImage ? "Görüntü Analizi Gerekiyor" : undefined,
     });
     
     setInputText("");
     setSelectedImage(null);
-  };
-
-  // Mock file selection
-  const handleFileSelect = () => {
-    // In a real app, this would trigger file input
-    // Using random tech image for demo
-    const randomImg = `https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80`; // Cyberpunk tech image
-    setSelectedImage(randomImg);
+    setReplyingTo(null);
   };
 
   return (
-    <div className="flex flex-col h-full bg-black/90 relative">
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-hide">
+    <div className="flex flex-col h-full bg-black relative">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
         {messages.map((msg) => {
           const isMe = msg.userId === user?.id;
           
           return (
             <motion.div
               key={msg.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className={clsx(
-                "flex flex-col max-w-[85%]",
-                isMe ? "ml-auto items-end" : "mr-auto items-start"
+              className={cn(
+                "flex items-end gap-2 max-w-[85%]",
+                isMe ? "ml-auto flex-row-reverse" : "mr-auto"
               )}
+              onClick={() => setReplyingTo(msg)}
             >
-              <div className="flex items-center space-x-2 mb-1 opacity-50 text-[10px] uppercase font-mono tracking-wider">
-                {!isMe && <span className="text-primary">{msg.sender.codeName}</span>}
-                <span className="text-muted-foreground">
-                  {msg.createdAt && format(new Date(msg.createdAt), "HH:mm")}
-                </span>
-                {isMe && <span className="text-accent">ADMIN</span>}
-              </div>
+              {!isMe && (
+                <Avatar className="w-8 h-8 shrink-0">
+                  <AvatarImage src={msg.sender.avatarUrl} />
+                  <AvatarFallback className="bg-muted text-[10px]">
+                    {msg.sender.codeName.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              
+              <div className="flex flex-col">
+                <div
+                  className={cn(
+                    "p-3 rounded-2xl text-[15px] shadow-sm",
+                    isMe 
+                      ? "bg-white text-black rounded-br-none" 
+                      : "bg-[#1a1a1a] text-white rounded-bl-none"
+                  )}
+                >
+                  {msg.replyTo && (
+                    <div className="mb-2 p-2 bg-black/20 rounded-lg border-l-2 border-white/30 text-xs opacity-70">
+                      <p className="font-bold mb-0.5">{msg.replyTo.sender.codeName}</p>
+                      <p className="truncate">{msg.replyTo.content || "Görsel"}</p>
+                    </div>
+                  )}
 
-              <div
-                className={clsx(
-                  "relative p-3 border text-sm font-mono leading-relaxed",
-                  isMe 
-                    ? "bg-secondary/50 border-primary/20 text-primary rounded-tl-lg rounded-bl-lg rounded-tr-lg" 
-                    : "bg-muted/30 border-muted-foreground/20 text-primary/90 rounded-tr-lg rounded-br-lg rounded-tl-lg"
-                )}
-              >
-                {/* Image Content */}
-                {msg.isImage && msg.imageUrl && (
-                  <div className="mb-2">
+                  {msg.isImage && msg.imageUrl && (
                     <Dialog>
                       <DialogTrigger asChild>
-                        <div className="relative group cursor-pointer overflow-hidden border border-primary/20">
-                          <img 
-                            src={msg.imageUrl} 
-                            alt="Attached" 
-                            className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
-                          />
-                          <div className="absolute inset-0 bg-accent/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <ShieldAlert className="w-8 h-8 text-white drop-shadow-lg" />
-                          </div>
-                        </div>
+                        <img 
+                          src={msg.imageUrl} 
+                          alt="Attached" 
+                          className="w-full rounded-lg mb-2 cursor-pointer object-cover max-h-60"
+                        />
                       </DialogTrigger>
-                      <DialogContent className="max-w-4xl bg-black border-primary/50 p-0 overflow-hidden">
+                      <DialogContent className="max-w-[95vw] bg-black border-none p-0">
                         <img src={msg.imageUrl} alt="Full" className="w-full h-auto" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/80 p-4 border-t border-primary/30">
-                          <p className="text-primary font-mono text-xs">[IMG_ID: {msg.id}] :: ANALYSIS_COMPLETE</p>
-                        </div>
                       </DialogContent>
                     </Dialog>
-                    
-                    {msg.operationNote && (
-                      <div className="mt-2 text-[10px] text-accent flex items-center border-l-2 border-accent pl-2">
-                        <span className="mr-1">⚠</span> {msg.operationNote}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Text Content */}
-                {msg.content && <p>{msg.content}</p>}
-
-                {/* Corner Accents */}
-                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-primary/40 -mt-px -mr-px" />
-                <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-primary/40 -mb-px -ml-px" />
+                  )}
+                  {msg.content && <p className="leading-snug">{msg.content}</p>}
+                </div>
+                <span className="text-[10px] text-muted-foreground mt-1 px-1">
+                  {msg.createdAt && format(new Date(msg.createdAt), "HH:mm")}
+                </span>
               </div>
             </motion.div>
           );
@@ -123,49 +107,52 @@ export function ChatInterface() {
         <div ref={scrollRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 bg-background/95 border-t border-primary/20 backdrop-blur-sm">
-        {selectedImage && (
-          <div className="mb-2 flex items-center bg-secondary/50 p-2 border border-primary/20 w-fit">
-            <ImageIcon className="w-4 h-4 text-primary mr-2" />
-            <span className="text-xs text-primary font-mono truncate max-w-[200px]">image_attachment_v1.enc</span>
-            <button onClick={() => setSelectedImage(null)} className="ml-2 hover:text-accent">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-        
-        <div className="flex items-end space-x-2">
+      <div className="p-4 bg-black border-t border-border">
+        <AnimatePresence>
+          {replyingTo && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="mb-2 p-2 bg-[#1a1a1a] rounded-lg flex items-center justify-between border-l-2 border-white"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-white uppercase tracking-tighter">Yanıtlanan: {replyingTo.sender.codeName}</p>
+                <p className="text-xs text-muted-foreground truncate">{replyingTo.content || "Görsel"}</p>
+              </div>
+              <button onClick={() => setReplyingTo(null)} className="p-1 hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="flex items-center gap-2">
           <button 
-            onClick={handleFileSelect}
-            className="p-3 bg-secondary hover:bg-secondary/80 border border-primary/20 text-primary transition-colors flex-shrink-0 group relative overflow-hidden"
+            onClick={() => {/* Real file picker logic */}}
+            className="p-2 text-muted-foreground hover:text-white transition-colors"
           >
-            <div className="absolute inset-0 bg-primary/10 translate-y-full group-hover:translate-y-0 transition-transform duration-200" />
-            <Paperclip className="w-5 h-5 relative z-10" />
+            <Paperclip className="w-6 h-6" />
           </button>
           
-          <div className="flex-1 relative">
-            <textarea
+          <div className="flex-1 bg-[#1a1a1a] rounded-2xl px-4 py-2">
+            <input
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="MESAJI ŞİFRELE..."
-              className="w-full bg-secondary/30 border border-primary/20 text-primary placeholder:text-muted-foreground/50 p-3 pr-10 focus:outline-none focus:border-primary/50 font-mono text-sm resize-none h-[46px] min-h-[46px] max-h-32"
+              placeholder="Mesaj yaz..."
+              className="w-full bg-transparent border-none focus:ring-0 text-white placeholder:text-muted-foreground py-1"
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
+                if (e.key === "Enter") handleSend();
               }}
             />
-            <div className="absolute right-0 bottom-0 w-2 h-2 border-b border-r border-primary/50" />
           </div>
 
           <button
             onClick={handleSend}
-            disabled={isPending || (!inputText && !selectedImage)}
-            className="p-3 bg-accent/90 hover:bg-accent border border-accent-foreground/20 text-white shadow-[0_0_10px_rgba(139,0,0,0.5)] disabled:opacity-50 disabled:shadow-none transition-all duration-300"
+            disabled={!inputText.trim() && !selectedImage}
+            className="p-2 text-white disabled:opacity-30"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-6 h-6 fill-current" />
           </button>
         </div>
       </div>
