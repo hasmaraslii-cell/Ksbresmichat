@@ -29,7 +29,7 @@ export const friends = pgTable("friends", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   friendId: integer("friend_id").notNull(),
-  status: text("status").default("pending").notNull(), // 'pending', 'accepted'
+  status: text("status").default("pending").notNull(),
 });
 
 export const intelLinks = pgTable("intel_links", {

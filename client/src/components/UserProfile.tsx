@@ -14,15 +14,15 @@ export function UserProfile() {
           <Avatar className="w-10 h-10 border border-border">
             <AvatarImage src={user.avatarUrl} />
             <AvatarFallback className="bg-muted text-xs">
-              {user.codeName.substring(0, 2)}
+              {user.username.substring(0, 2)}
             </AvatarFallback>
           </Avatar>
           <div>
             <div className="flex items-center gap-1">
-              <h2 className="text-sm font-bold tracking-tight">{user.codeName}</h2>
+              <h2 className="text-sm font-bold tracking-tight">{user.username}</h2>
               {user.isAdmin && <ShieldCheck className="w-3 h-3 text-blue-400" />}
             </div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">AKTİF OPERATÖR</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">AKTİF KULLANICI</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 rounded-full">

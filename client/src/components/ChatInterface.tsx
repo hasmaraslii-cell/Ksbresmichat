@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Send, Paperclip, X, Trash2, Edit2, Download, ExternalLink, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
@@ -96,7 +96,7 @@ export function ChatInterface() {
   const downloadImage = (url: string) => {
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ksb_op_image_${Date.now()}.png`;
+    link.download = `ksb_user_image_${Date.now()}.png`;
     link.click();
   };
 
@@ -115,15 +115,15 @@ export function ChatInterface() {
             >
               <Avatar className="w-8 h-8">
                 <AvatarImage src={msg.sender.avatarUrl} />
-                <AvatarFallback className="text-[10px]">{msg.sender.codeName.substring(0, 2)}</AvatarFallback>
+                <AvatarFallback className="text-[10px]">{msg.sender.username.substring(0, 2)}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
                 <div className="flex items-center gap-1 mb-0.5 px-1">
-                  <span className="text-[10px] font-bold text-muted-foreground">{msg.sender.codeName}</span>
+                  <span className="text-[10px] font-bold text-muted-foreground">{msg.sender.username}</span>
                   {msg.sender.isAdmin && <ShieldCheck className="w-3 h-3 text-blue-400" />}
                 </div>
                 <div className={cn("p-3 rounded-2xl text-[15px]", isMe ? "bg-white text-black rounded-br-none" : "bg-[#1a1a1a] text-white rounded-bl-none")} onClick={() => setReplyingTo(msg)}>
-                  {msg.replyTo && <div className="mb-2 p-2 bg-black/10 rounded-lg border-l-2 border-white/30 text-xs opacity-70"><p className="font-bold">{msg.replyTo.sender.codeName}</p><p className="truncate">{msg.replyTo.content || "Görsel"}</p></div>}
+                  {msg.replyTo && <div className="mb-2 p-2 bg-black/10 rounded-lg border-l-2 border-white/30 text-xs opacity-70"><p className="font-bold">{msg.replyTo.sender.username}</p><p className="truncate">{msg.replyTo.content || "Görsel"}</p></div>}
                   {msg.isImage && (
                     <div className="relative group/img">
                       <Dialog>
@@ -131,6 +131,7 @@ export function ChatInterface() {
                           <img src={msg.imageUrl} className="w-full rounded-lg mb-2 cursor-pointer max-h-60 object-cover" />
                         </DialogTrigger>
                         <DialogContent className="max-w-[95vw] bg-black border-none p-0">
+                          <DialogTitle className="sr-only">Görsel Önizleme</DialogTitle>
                           <img src={msg.imageUrl} className="w-full h-auto" />
                         </DialogContent>
                       </Dialog>
@@ -167,7 +168,7 @@ export function ChatInterface() {
 
       <div className="p-4 bg-black border-t border-border">
         <AnimatePresence>
-          {replyingTo && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mb-2 p-2 bg-[#1a1a1a] rounded-lg flex items-center justify-between border-l-2 border-white overflow-hidden"><div className="min-w-0"><p className="text-[10px] font-bold uppercase">Yanıtlanan: {replyingTo.sender.codeName}</p><p className="text-xs truncate">{replyingTo.content || "Görsel"}</p></div><button onClick={() => setReplyingTo(null)}><X className="w-4 h-4" /></button></motion.div>}
+          {replyingTo && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mb-2 p-2 bg-[#1a1a1a] rounded-lg flex items-center justify-between border-l-2 border-white overflow-hidden"><div className="min-w-0"><p className="text-[10px] font-bold uppercase">Yanıtlanan: {replyingTo.sender.username}</p><p className="text-xs truncate">{replyingTo.content || "Görsel"}</p></div><button onClick={() => setReplyingTo(null)}><X className="w-4 h-4" /></button></motion.div>}
         </AnimatePresence>
         {editingMsg && <div className="mb-2 p-2 bg-[#1a1a1a] rounded-lg flex items-center justify-between border-l-2 border-white"><div className="min-w-0"><p className="text-[10px] font-bold uppercase">Düzenlenen:</p><p className="text-xs truncate">{editingMsg.content}</p></div><button onClick={() => { setEditingMsg(null); setInputText(""); }}><X className="w-4 h-4" /></button></div>}
         <div className="flex items-center gap-2">

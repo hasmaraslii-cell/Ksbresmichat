@@ -22,16 +22,13 @@ export function DMView() {
 
   const addFriendMutation = useMutation({
     mutationFn: async (username: string) => {
-      // First find user by username (mock search logic for now via a specific endpoint if needed, or using general search)
-      const usersRes = await fetch(api.users.search.path + "?username=" + username);
-      const users = await usersRes.json();
-      if (users.length === 0) throw new Error("Kullanıcı bulunamadı");
-      
+      // General user check
       const res = await fetch(api.friends.request.path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ friendId: users[0].id })
+        body: JSON.stringify({ username })
       });
+      if (!res.ok) throw new Error((await res.json()).message || "Hata");
       return res.json();
     },
     onSuccess: () => {
@@ -79,10 +76,10 @@ export function DMView() {
             <div className="flex items-center gap-3">
               <Avatar className="w-10 h-10">
                 <AvatarImage src={f.avatarUrl} />
-                <AvatarFallback>{f.codeName.substring(0, 2)}</AvatarFallback>
+                <AvatarFallback>{f.username.substring(0, 2)}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-sm font-bold">{f.codeName}</p>
+                <p className="text-sm font-bold">{f.username}</p>
                 <p className="text-[10px] text-muted-foreground uppercase">{f.friendStatus === 'accepted' ? 'Arkadaş' : 'İstek Bekliyor'}</p>
               </div>
             </div>
