@@ -39,7 +39,7 @@ export function Auth() {
         <Input type="password" placeholder="Şifre" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="bg-[#1a1a1a] border-none h-12" />
         {!isLogin && <Input placeholder="Kod Adı" value={form.codeName} onChange={e => setForm(f => ({ ...f, codeName: e.target.value }))} className="bg-[#1a1a1a] border-none h-12" />}
         <Button onClick={() => mutation.mutate(form)} className="w-full h-12 bg-white text-black font-bold uppercase" disabled={mutation.isPending}>
-          {isLogin ? "ERİŞİM SAĞLA" : "ÜYELİK OLUŞTUR"}
+          {isLogin ? "Giriş Yap" : "Kayıt Ol"}
         </Button>
         <button onClick={() => setIsLogin(!isLogin)} className="w-full text-xs text-muted-foreground uppercase tracking-widest">
           {isLogin ? "Hesabın yok mu? Kaydol" : "Zaten üye misin? Giriş yap"}

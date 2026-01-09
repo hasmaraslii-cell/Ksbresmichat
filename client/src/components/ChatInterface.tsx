@@ -1,13 +1,38 @@
 import { useRef, useEffect, useState } from "react";
 import { useCurrentUser, useMessages, useSendMessage } from "@/hooks/use-ksb";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Paperclip, X, Trash2, Edit2 } from "lucide-react";
+import { Send, Paperclip, X, Trash2, Edit2, Download, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
+
+function LinkPreview({ text }: { text: string }) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const urls = text.match(urlRegex);
+  if (!urls) return null;
+
+  return (
+    <div className="mt-2 space-y-2">
+      {urls.map((url, i) => (
+        <a 
+          key={i} 
+          href={url} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="block p-2 bg-black/40 rounded-lg border border-white/10 hover:border-white/30 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <ExternalLink className="w-3 h-3 text-blue-400" />
+            <span className="text-[10px] text-blue-400 truncate flex-1">{url}</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  );
+}
 
 export function ChatInterface() {
   const { data: user } = useCurrentUser();
@@ -68,6 +93,13 @@ export function ChatInterface() {
     }
   };
 
+  const downloadImage = (url: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ksb_op_image_${Date.now()}.png`;
+    link.click();
+  };
+
   return (
     <div className="flex flex-col h-full bg-black">
       <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={handleFile} />
@@ -75,13 +107,44 @@ export function ChatInterface() {
         {messages.map((msg) => {
           const isMe = msg.userId === user?.id;
           return (
-            <div key={msg.id} className={cn("flex items-end gap-2 max-w-[85%]", isMe ? "ml-auto flex-row-reverse" : "mr-auto group")}>
+            <motion.div 
+              key={msg.id} 
+              initial={{ opacity: 0, x: isMe ? 20 : -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className={cn("flex items-end gap-2 max-w-[85%]", isMe ? "ml-auto flex-row-reverse" : "mr-auto group")}
+            >
               {!isMe && <Avatar className="w-8 h-8"><AvatarImage src={msg.sender.avatarUrl} /><AvatarFallback className="text-[10px]">{msg.sender.codeName.substring(0, 2)}</AvatarFallback></Avatar>}
               <div className="flex flex-col">
                 <div className={cn("p-3 rounded-2xl text-[15px]", isMe ? "bg-white text-black rounded-br-none" : "bg-[#1a1a1a] text-white rounded-bl-none")} onClick={() => setReplyingTo(msg)}>
                   {msg.replyTo && <div className="mb-2 p-2 bg-black/10 rounded-lg border-l-2 border-white/30 text-xs opacity-70"><p className="font-bold">{msg.replyTo.sender.codeName}</p><p className="truncate">{msg.replyTo.content || "Görsel"}</p></div>}
-                  {msg.isImage && <Dialog><DialogTrigger asChild><img src={msg.imageUrl} className="w-full rounded-lg mb-2 cursor-pointer max-h-60 object-cover" /></DialogTrigger><DialogContent className="max-w-[95vw] bg-black border-none p-0"><img src={msg.imageUrl} className="w-full h-auto" /></DialogContent></Dialog>}
-                  {msg.content && <p className="leading-snug">{msg.content}</p>}
+                  {msg.isImage && (
+                    <div className="relative group/img">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <img src={msg.imageUrl} className="w-full rounded-lg mb-2 cursor-pointer max-h-60 object-cover" />
+                        </DialogTrigger>
+                        <DialogContent className="max-w-[95vw] bg-black border-none p-0">
+                          <img src={msg.imageUrl} className="w-full h-auto" />
+                        </DialogContent>
+                      </Dialog>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); downloadImage(msg.imageUrl!); }}
+                        className="absolute top-2 right-2 p-2 bg-black/60 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity text-white"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                  {msg.content && (
+                    <motion.p 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="leading-snug break-words"
+                    >
+                      {msg.content}
+                    </motion.p>
+                  )}
+                  {msg.content && <LinkPreview text={msg.content} />}
                 </div>
                 <div className="flex items-center gap-2 mt-1 px-1">
                   <span className="text-[10px] text-muted-foreground">{format(new Date(msg.createdAt), "HH:mm")}</span>
@@ -89,14 +152,16 @@ export function ChatInterface() {
                   {isMe && <button onClick={() => { setEditingMsg(msg); setInputText(msg.content); }} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground"><Edit2 className="w-3 h-3" /></button>}
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
         <div ref={scrollRef} />
       </div>
 
       <div className="p-4 bg-black border-t border-border">
-        {replyingTo && <div className="mb-2 p-2 bg-[#1a1a1a] rounded-lg flex items-center justify-between border-l-2 border-white"><div className="min-w-0"><p className="text-[10px] font-bold uppercase">Yanıtlanan: {replyingTo.sender.codeName}</p><p className="text-xs truncate">{replyingTo.content || "Görsel"}</p></div><button onClick={() => setReplyingTo(null)}><X className="w-4 h-4" /></button></div>}
+        <AnimatePresence>
+          {replyingTo && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mb-2 p-2 bg-[#1a1a1a] rounded-lg flex items-center justify-between border-l-2 border-white overflow-hidden"><div className="min-w-0"><p className="text-[10px] font-bold uppercase">Yanıtlanan: {replyingTo.sender.codeName}</p><p className="text-xs truncate">{replyingTo.content || "Görsel"}</p></div><button onClick={() => setReplyingTo(null)}><X className="w-4 h-4" /></button></motion.div>}
+        </AnimatePresence>
         {editingMsg && <div className="mb-2 p-2 bg-[#1a1a1a] rounded-lg flex items-center justify-between border-l-2 border-white"><div className="min-w-0"><p className="text-[10px] font-bold uppercase">Düzenlenen:</p><p className="text-xs truncate">{editingMsg.content}</p></div><button onClick={() => { setEditingMsg(null); setInputText(""); }}><X className="w-4 h-4" /></button></div>}
         <div className="flex items-center gap-2">
           <button onClick={() => fileRef.current?.click()} className="p-2 text-muted-foreground hover:text-white"><Paperclip className="w-6 h-6" /></button>
