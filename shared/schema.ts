@@ -20,6 +20,7 @@ export const users = pgTable("users", {
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(), 
+  receiverId: integer("receiver_id"), // null for group chat
   parentId: integer("parent_id"), 
   content: text("content"),
   isImage: boolean("is_image").default(false),

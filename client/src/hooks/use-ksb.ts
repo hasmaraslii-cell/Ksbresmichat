@@ -32,15 +32,16 @@ export function useUpdateProfile() {
 
 // === MESSAGE HOOKS ===
 
-export function useMessages() {
+export function useMessages(targetId?: number) {
   return useQuery({
-    queryKey: [api.messages.list.path],
+    queryKey: [api.messages.list.path, targetId],
     queryFn: async () => {
-      const res = await fetch(api.messages.list.path);
+      const url = targetId ? `${api.messages.list.path}?targetId=${targetId}` : api.messages.list.path;
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch messages");
       return api.messages.list.responses[200].parse(await res.json());
     },
-    refetchInterval: 3000, // Poll every 3s for new messages (simple real-time)
+    refetchInterval: 3000,
   });
 }
 

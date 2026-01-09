@@ -44,10 +44,27 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     return updated;
   }
-  async getMessages(): Promise<MessageWithUser[]> {
-    const msgs = await db.select({ message: messages, sender: users }).from(messages).innerJoin(users, eq(messages.userId, users.id)).orderBy(asc(messages.createdAt));
+  async getMessages(currentUserId?: number, targetId?: number): Promise<MessageWithUser[]> {
+    const messagesData = await db.select({ message: messages, sender: users })
+      .from(messages)
+      .innerJoin(users, eq(messages.userId, users.id))
+      .orderBy(asc(messages.createdAt));
+
+    let filteredMessages = messagesData;
+
+    if (targetId) {
+      // DM: messages between currentUserId and targetId
+      filteredMessages = messagesData.filter(m => 
+        (m.message.userId === currentUserId && m.message.receiverId === targetId) ||
+        (m.message.userId === targetId && m.message.receiverId === currentUserId)
+      );
+    } else {
+      // Group: messages where receiverId is null
+      filteredMessages = messagesData.filter(m => m.message.receiverId === null);
+    }
+
     const result: MessageWithUser[] = [];
-    for (const m of msgs) {
+    for (const m of filteredMessages) {
       let replyTo: (Message & { sender: User }) | undefined;
       if (m.message.parentId) {
         const [parent] = await db.select({ message: messages, sender: users }).from(messages).innerJoin(users, eq(messages.userId, users.id)).where(eq(messages.id, m.message.parentId));

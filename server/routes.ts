@@ -130,7 +130,8 @@ export async function registerRoutes(
     const userId = req.session.userId;
     if (!userId) return res.status(401).json({ message: "Giriş yapın" });
     
-    const messages = await storage.getMessages();
+    const { targetId } = req.query;
+    const messages = await storage.getMessages(userId, targetId ? parseInt(targetId as string) : undefined);
     res.json(messages);
   });
 
