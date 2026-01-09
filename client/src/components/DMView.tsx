@@ -6,7 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
-export function DMView({ onStartChat }: { onStartChat?: () => void }) {
+export function DMView({ onStartChat }: { onStartChat?: (friend: any) => void }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: friendsList = [] } = useQuery({
@@ -22,7 +22,6 @@ export function DMView({ onStartChat }: { onStartChat?: () => void }) {
 
   const addFriendMutation = useMutation({
     mutationFn: async (username: string) => {
-      // General user check
       const res = await fetch(api.friends.request.path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,15 +78,15 @@ export function DMView({ onStartChat }: { onStartChat?: () => void }) {
                 <AvatarFallback>{f.username.substring(0, 2)}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <p className="text-sm font-bold">{f.username}</p>
-                <p className="text-[10px] text-muted-foreground uppercase">{f.displayName && `${f.displayName} • `}{f.friendStatus === 'accepted' ? 'Arkadaş' : 'İstek Bekliyor'}</p>
+                <p className="text-sm font-bold">{f.displayName || f.username}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">{f.friendStatus === 'accepted' ? 'Arkadaş' : 'İstek Bekliyor'}</p>
                 {f.bio && <p className="text-[10px] text-muted-foreground italic mt-1">{f.bio}</p>}
               </div>
               {f.friendStatus === 'accepted' && (
                 <button 
                   onClick={() => {
-                    onStartChat?.();
-                    toast({ title: "Sohbet başlatılıyor", description: `${f.username} ile sohbet açılıyor...` });
+                    onStartChat?.(f);
+                    toast({ title: "Sohbet başlatılıyor", description: `${f.displayName || f.username} ile sohbet açılıyor...` });
                   }}
                   className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"
                 >

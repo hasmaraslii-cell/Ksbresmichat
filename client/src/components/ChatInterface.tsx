@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
+import { api } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
 
 function LinkPreview({ text }: { text: string }) {
@@ -50,7 +50,41 @@ export function ChatInterface({ isDM = false }: { isDM?: boolean }) {
 
   useEffect(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
 
-  // ... (rest of the mutations)
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, content }: { id: number, content: string }) => {
+      const res = await fetch(`/api/messages/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+      });
+      if (!res.ok) throw new Error();
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
+      setEditingMsg(null);
+      setInputText("");
+    }
+  });
+
+  const delMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/messages/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.messages.list.path] })
+  });
+
+  const banMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/users/${id}/ban`, { method: "POST" });
+      if (!res.ok) throw new Error();
+    },
+    onSuccess: () => {
+      toast({ title: "Kullanıcı yasaklandı" });
+      queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
+    }
+  });
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -91,91 +125,99 @@ export function ChatInterface({ isDM = false }: { isDM?: boolean }) {
     link.click();
   };
 
+  const renderMessage = (msg: any) => {
+    const isMe = msg.userId === user?.id;
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    const parts = (msg.content || "").split(urlPattern);
+
+    return (
+      <motion.div 
+        key={msg.id} 
+        initial={{ opacity: 0, x: isMe ? 20 : -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className={cn("flex items-end gap-2 max-w-[85%]", isMe ? "ml-auto flex-row-reverse" : "mr-auto group")}
+      >
+        <Avatar className="w-8 h-8">
+          <AvatarImage src={msg.sender.avatarUrl} />
+          <AvatarFallback className="text-[10px]">{msg.sender.username.substring(0, 2)}</AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1 mb-0.5 px-1">
+            <span className="text-[10px] font-bold text-muted-foreground">{msg.sender.displayName || msg.sender.username}</span>
+            {msg.sender.isAdmin && <ShieldCheck className="w-3 h-3 text-blue-400" />}
+            {user?.isAdmin && !isMe && (
+              <button onClick={() => banMutation.mutate(msg.userId)} className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 ml-1">
+                <Ban className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+          <div className={cn("p-3 rounded-2xl text-[15px]", isMe ? "bg-white text-black rounded-tr-none" : "bg-[#1a1a1a] text-white rounded-bl-none")} onClick={() => setReplyingTo(msg)}>
+            {msg.replyTo && <div className="mb-2 p-2 bg-black/10 rounded-lg border-l-2 border-white/30 text-xs opacity-70"><p className="font-bold">{msg.replyTo.sender.username}</p><p className="truncate">{msg.replyTo.content || "Medya"}</p></div>}
+            {msg.isImage && (
+              <div className="relative group/img">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <img src={msg.imageUrl} className="w-full rounded-lg mb-2 cursor-pointer max-h-60 object-cover" />
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[95vw] bg-black border-none p-0">
+                    <DialogTitle className="sr-only">Görsel Önizleme</DialogTitle>
+                    <img src={msg.imageUrl} className="w-full h-auto" />
+                  </DialogContent>
+                </Dialog>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); downloadMedia(msg.imageUrl!, 'png'); }}
+                  className="absolute top-2 right-2 p-2 bg-black/60 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity text-white"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            {msg.isVideo && (
+              <div className="relative group/vid">
+                <video src={msg.videoUrl} className="w-full rounded-lg mb-2 max-h-60 object-cover" controls />
+                <button 
+                  onClick={(e) => { e.stopPropagation(); downloadMedia(msg.videoUrl!, 'mp4'); }}
+                  className="absolute top-2 right-2 p-2 bg-black/60 rounded-full opacity-0 group-hover/vid:opacity-100 transition-opacity text-white"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            {msg.isAudio && (
+              <div className="flex items-center gap-2 bg-black/20 p-2 rounded-lg mb-2">
+                <Mic className="w-4 h-4 text-blue-400" />
+                <audio src={msg.audioUrl} controls className="h-8 max-w-[200px]" />
+              </div>
+            )}
+            <div className="leading-snug break-words">
+              {parts.map((part, i) => {
+                if (part.match(urlPattern)) {
+                  return (
+                    <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline hover:text-blue-300 break-all">
+                      {part}
+                    </a>
+                  );
+                }
+                return part;
+              })}
+            </div>
+            {msg.content && <LinkPreview text={msg.content} />}
+          </div>
+          <div className="flex items-center gap-2 mt-1 px-1">
+            <span className="text-[10px] text-muted-foreground">{format(new Date(msg.createdAt), "HH:mm")}</span>
+            {(isMe || user?.isAdmin) && <button onClick={() => delMutation.mutate(msg.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"><Trash2 className="w-3 h-3" /></button>}
+            {isMe && <button onClick={() => { setEditingMsg(msg); setInputText(msg.content || ""); }} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground"><Edit2 className="w-3 h-3" /></button>}
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full bg-black">
       <input type="file" ref={fileRef} className="hidden" accept="image/*,video/*,audio/*" onChange={handleFile} />
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
-        {messages.map((msg) => {
-          const isMe = msg.userId === user?.id;
-          return (
-            <motion.div 
-              key={msg.id} 
-              initial={{ opacity: 0, x: isMe ? 20 : -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={cn("flex items-end gap-2 max-w-[85%]", isMe ? "ml-auto flex-row-reverse" : "mr-auto group")}
-            >
-              <Avatar className="w-8 h-8">
-                <AvatarImage src={msg.sender.avatarUrl} />
-                <AvatarFallback className="text-[10px]">{msg.sender.username.substring(0, 2)}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1 mb-0.5 px-1">
-                  <span className="text-[10px] font-bold text-muted-foreground">{msg.sender.username}</span>
-                  {msg.sender.isAdmin && <ShieldCheck className="w-3 h-3 text-blue-400" />}
-                  {user?.isAdmin && !isMe && (
-                    <button onClick={() => banMutation.mutate(msg.userId)} className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 ml-1">
-                      <Ban className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-                <div className={cn("p-3 rounded-2xl text-[15px]", isMe ? "bg-white text-black rounded-br-none" : "bg-[#1a1a1a] text-white rounded-bl-none")} onClick={() => setReplyingTo(msg)}>
-                  {msg.replyTo && <div className="mb-2 p-2 bg-black/10 rounded-lg border-l-2 border-white/30 text-xs opacity-70"><p className="font-bold">{msg.replyTo.sender.username}</p><p className="truncate">{msg.replyTo.content || "Medya"}</p></div>}
-                  {msg.isImage && (
-                    <div className="relative group/img">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <img src={msg.imageUrl} className="w-full rounded-lg mb-2 cursor-pointer max-h-60 object-cover" />
-                        </DialogTrigger>
-                        <DialogContent className="max-w-[95vw] bg-black border-none p-0">
-                          <DialogTitle className="sr-only">Görsel Önizleme</DialogTitle>
-                          <img src={msg.imageUrl} className="w-full h-auto" />
-                        </DialogContent>
-                      </Dialog>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); downloadMedia(msg.imageUrl!, 'png'); }}
-                        className="absolute top-2 right-2 p-2 bg-black/60 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity text-white"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                  {msg.isVideo && (
-                    <div className="relative group/vid">
-                      <video src={msg.videoUrl} className="w-full rounded-lg mb-2 max-h-60 object-cover" controls />
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); downloadMedia(msg.videoUrl!, 'mp4'); }}
-                        className="absolute top-2 right-2 p-2 bg-black/60 rounded-full opacity-0 group-hover/vid:opacity-100 transition-opacity text-white"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                  {msg.isAudio && (
-                    <div className="flex items-center gap-2 bg-black/20 p-2 rounded-lg mb-2">
-                      <Mic className="w-4 h-4 text-blue-400" />
-                      <audio src={msg.audioUrl} controls className="h-8 max-w-[200px]" />
-                    </div>
-                  )}
-                  {msg.content && (
-                    <motion.p 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="leading-snug break-words"
-                    >
-                      {msg.content}
-                    </motion.p>
-                  )}
-                  {msg.content && <LinkPreview text={msg.content} />}
-                </div>
-                <div className="flex items-center gap-2 mt-1 px-1">
-                  <span className="text-[10px] text-muted-foreground">{format(new Date(msg.createdAt), "HH:mm")}</span>
-                  {(isMe || user?.isAdmin) && <button onClick={() => delMutation.mutate(msg.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"><Trash2 className="w-3 h-3" /></button>}
-                  {isMe && <button onClick={() => { setEditingMsg(msg); setInputText(msg.content || ""); }} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground"><Edit2 className="w-3 h-3" /></button>}
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
+        {messages.map((msg) => renderMessage(msg))}
         <div ref={scrollRef} />
       </div>
 
