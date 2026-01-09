@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,31 +6,30 @@
 
 :root {
   --background: 0 0% 0%; /* Black */
-  --foreground: 0 0% 75%; /* Silver C0C0C0 */
+  --foreground: 0 0% 100%; /* White */
   
-  --primary: 0 0% 75%; /* Silver */
-  --primary-foreground: 0 0% 0%; /* Black */
+  --primary: 0 0% 100%;
+  --primary-foreground: 0 0% 0%;
   
   --secondary: 0 0% 10%; /* Dark Grey */
-  --secondary-foreground: 0 0% 75%; /* Silver */
+  --secondary-foreground: 0 0% 100%;
   
   --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 40%;
+  --muted-foreground: 0 0% 60%;
   
-  --accent: 0 100% 27%; /* Dark Red #8B0000 */
-  --accent-foreground: 0 0% 90%;
+  --accent: 0 0% 20%;
+  --accent-foreground: 0 0% 100%;
   
-  --destructive: 0 100% 27%;
+  --destructive: 0 100% 50%;
   --destructive-foreground: 0 0% 100%;
   
-  --border: 0 0% 20%;
-  --input: 0 0% 15%;
-  --ring: 0 0% 75%;
+  --border: 0 0% 15%;
+  --input: 0 0% 10%;
+  --ring: 0 0% 100%;
   
-  --radius: 0px; /* Industrial sharp edges */
+  --radius: 12px;
   
-  --font-mono: 'Fira Code', monospace;
-  --font-display: 'Rajdhani', sans-serif;
+  --font-sans: 'Inter', sans-serif;
 }
 
 @layer base {
@@ -38,22 +37,12 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased font-mono overflow-hidden;
-    font-family: 'Fira Code', monospace;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Rajdhani', sans-serif;
-    @apply font-bold tracking-tight uppercase;
+    @apply bg-background text-foreground antialiased font-sans overflow-hidden;
+    font-family: 'Inter', sans-serif;
   }
 }
 
 @layer utilities {
-  .text-shadow-glow {
-    text-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
-  }
-  .box-shadow-glow {
-    box-shadow: 0 0 15px rgba(139, 0, 0, 0.2);
-  }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -61,32 +50,4 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-}
-
-/* Custom animations */
-@keyframes scanline {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100%);
-  }
-}
-
-.scanline::after {
-  content: " ";
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0) 50%,
-    rgba(0, 0, 0, 0.25) 50%
-  );
-  background-size: 100% 4px;
-  z-index: 50;
-  pointer-events: none;
 }
