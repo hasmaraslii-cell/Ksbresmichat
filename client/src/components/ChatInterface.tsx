@@ -79,14 +79,23 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
         content: `Media: ${file.name}` 
       };
       
+      // Clear input and show immediate feedback
+      if (fileRef.current) fileRef.current.value = "";
+
       if (file.type.startsWith('image/')) {
         sendMessage({ ...basePayload, imageUrl: result, isImage: true }, {
-          onSuccess: () => toast({ title: "Başarılı", description: "Fotoğraf gönderildi" }),
+          onSuccess: () => {
+            toast({ title: "Başarılı", description: "Fotoğraf gönderildi" });
+            queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
+          },
           onError: () => toast({ title: "Hata", description: "Fotoğraf gönderilemedi", variant: "destructive" })
         });
       } else if (file.type.startsWith('video/')) {
         sendMessage({ ...basePayload, videoUrl: result, isVideo: true }, {
-          onSuccess: () => toast({ title: "Başarılı", description: "Video gönderildi" }),
+          onSuccess: () => {
+            toast({ title: "Başarılı", description: "Video gönderildi" });
+            queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
+          },
           onError: () => toast({ title: "Hata", description: "Video gönderilemedi", variant: "destructive" })
         });
       }

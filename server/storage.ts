@@ -62,6 +62,11 @@ export class DatabaseStorage implements IStorage {
       // Group: messages where receiverId is null
       filteredMessages = messagesData.filter(m => m.message.receiverId === null);
     }
+    
+    // Limit frontend load to last 100
+    if (filteredMessages.length > 100) {
+      filteredMessages = filteredMessages.slice(-100);
+    }
 
     const result: MessageWithUser[] = [];
     for (const m of filteredMessages) {
@@ -80,6 +85,41 @@ export class DatabaseStorage implements IStorage {
   }
   async createMessage(message: InsertMessage): Promise<Message> {
     const [newMsg] = await db.insert(messages).values(message).returning();
+    
+    // Auto-delete mechanism: Keep only last 100 messages for this context (Group or DM)
+    try {
+      if (!message.receiverId) {
+        // Group chat limit
+        const groupMsgs = await db.select({ id: messages.id })
+          .from(messages)
+          .where(eq(messages.receiverId, null))
+          .orderBy(desc(messages.createdAt));
+        
+        if (groupMsgs.length > 100) {
+          const idsToDelete = groupMsgs.slice(100).map(m => m.id);
+          await db.delete(messages).where(inArray(messages.id, idsToDelete));
+        }
+      } else {
+        // DM limit between these two users
+        const dmMsgs = await db.select({ id: messages.id })
+          .from(messages)
+          .where(
+            or(
+              and(eq(messages.userId, message.userId), eq(messages.receiverId, message.receiverId)),
+              and(eq(messages.userId, message.receiverId), eq(messages.receiverId, message.userId))
+            )
+          )
+          .orderBy(desc(messages.createdAt));
+        
+        if (dmMsgs.length > 100) {
+          const idsToDelete = dmMsgs.slice(100).map(m => m.id);
+          await db.delete(messages).where(inArray(messages.id, idsToDelete));
+        }
+      }
+    } catch (err) {
+      console.error("Auto-delete error:", err);
+    }
+    
     return newMsg;
   }
   async deleteMessage(id: number): Promise<void> {
