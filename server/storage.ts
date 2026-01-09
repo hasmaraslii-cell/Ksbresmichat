@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { users, messages, intelLinks, friends, type User, type InsertUser, type Message, type InsertMessage, type IntelLink, type MessageWithUser, type Friend } from "@shared/schema";
-import { eq, desc, asc, and, or, ne, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, or, ne, inArray, isNull } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -15,7 +15,7 @@ export interface IStorage {
   updateMessage(id: number, content: string): Promise<Message>;
   getIntelLinks(): Promise<IntelLink[]>;
   getFriends(userId: number): Promise<(User & { friendStatus: string })[]>;
-  addFriend(userId: number, friendId: number): Promise<void>;
+  addFriend(userId: number, friendUsername: string): Promise<void>;
   acceptFriend(userId: number, friendId: number): Promise<void>;
   seedIntelLinks(): Promise<void>;
   seedUsers(): Promise<void>;
@@ -92,7 +92,7 @@ export class DatabaseStorage implements IStorage {
         // Group chat limit
         const groupMsgs = await db.select({ id: messages.id })
           .from(messages)
-          .where(eq(messages.receiverId, null))
+          .where(isNull(messages.receiverId))
           .orderBy(desc(messages.createdAt));
         
         if (groupMsgs.length > 100) {
@@ -105,8 +105,8 @@ export class DatabaseStorage implements IStorage {
           .from(messages)
           .where(
             or(
-              and(eq(messages.userId, message.userId), eq(messages.receiverId, message.receiverId)),
-              and(eq(messages.userId, message.receiverId), eq(messages.receiverId, message.userId))
+              and(eq(messages.userId, message.userId), eq(messages.receiverId, message.receiverId!)),
+              and(eq(messages.userId, message.receiverId!), eq(messages.receiverId, message.userId))
             )
           )
           .orderBy(desc(messages.createdAt));

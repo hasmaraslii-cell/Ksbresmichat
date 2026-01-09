@@ -91,7 +91,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
           onError: () => toast({ title: "Hata", description: "Fotoğraf gönderilemedi", variant: "destructive" })
         });
       } else if (file.type.startsWith('video/')) {
-        sendMessage({ ...basePayload, videoUrl: result, isVideo: true }, {
+        sendMessage({ ...basePayload, videoUrl: result, isVideo: true, isImage: false }, {
           onSuccess: () => {
             toast({ title: "Başarılı", description: "Video gönderildi" });
             queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
