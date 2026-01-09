@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type InsertMessage, type UpdateProfileRequest } from "@shared/routes";
+import { api } from "@shared/routes";
+import { type InsertMessage, type MessageWithUser } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+
+// Types from routes
+type UpdateProfileRequest = any; 
 
 // === USER HOOKS ===
 
@@ -33,32 +38,51 @@ export function useUpdateProfile() {
 // === MESSAGE HOOKS ===
 
 export function useMessages(targetId?: number) {
-  return useQuery({
+  const queryClient = useQueryClient();
+  return useQuery<MessageWithUser[]>({
     queryKey: [api.messages.list.path, targetId],
     queryFn: async () => {
+      console.log("Hooks: Fetching messages for targetId:", targetId);
       const url = targetId ? `${api.messages.list.path}?targetId=${targetId}` : api.messages.list.path;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch messages");
-      return api.messages.list.responses[200].parse(await res.json());
+      const data = await res.json();
+      console.log("Hooks: Messages received:", data.length);
+      return data; // Return raw data, we'll handle validation if needed or just trust the backend for now
     },
-    refetchInterval: 3000,
+    refetchInterval: 2000,
   });
 }
 
 export function useSendMessage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (data: InsertMessage) => {
-      const validated = api.messages.send.input.parse(data);
+      console.log("Hooks: Sending message payload:", data);
       const res = await fetch(api.messages.send.path, {
         method: api.messages.send.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validated),
+        body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to send message");
-      return api.messages.send.responses[201].parse(await res.json());
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to send message");
+      }
+      return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.messages.list.path] }),
+    onSuccess: () => {
+      console.log("Hooks: Message sent successfully, invalidating queries");
+      queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
+    },
+    onError: (error: Error) => {
+      console.error("Hooks: Send message failed:", error);
+      toast({
+        title: "Hata",
+        description: "Mesaj gönderilemedi: " + error.message,
+        variant: "destructive",
+      });
+    }
   });
 }
 

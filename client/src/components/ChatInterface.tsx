@@ -127,6 +127,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
   };
 
   const renderMessage = (msg: any) => {
+    if (!msg || !msg.sender) return null;
     const isMe = msg.userId === user?.id;
     const urlPattern = /(https?:\/\/[^\s]+)/g;
     const content = msg.content || "";
@@ -142,7 +143,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
         <div className={cn("flex items-end gap-2 max-w-[85%]", isMe ? "flex-row-reverse" : "flex-row")}>
           <Avatar className="w-8 h-8 shrink-0">
             <AvatarImage src={msg.sender.avatarUrl} />
-            <AvatarFallback className="text-[10px]">{msg.sender.username.substring(0, 2)}</AvatarFallback>
+            <AvatarFallback className="text-[10px]">{msg.sender.username?.substring(0, 2) || "??"}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
             {!isMe && (
@@ -157,7 +158,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
               </div>
             )}
             <div className={cn("p-3 rounded-2xl text-[15px] group relative", isMe ? "bg-white text-black rounded-br-none" : "bg-[#1a1a1a] text-white rounded-bl-none")}>
-              {msg.replyTo && <div className="mb-2 p-2 bg-black/10 rounded-lg border-l-2 border-white/30 text-xs opacity-70"><p className="font-bold">{msg.replyTo.sender.displayName || msg.replyTo.sender.username}</p><p className="truncate">{msg.replyTo.content || "Medya"}</p></div>}
+              {msg.replyTo && msg.replyTo.sender && <div className="mb-2 p-2 bg-black/10 rounded-lg border-l-2 border-white/30 text-xs opacity-70"><p className="font-bold">{msg.replyTo.sender.displayName || msg.replyTo.sender.username}</p><p className="truncate">{msg.replyTo.content || "Medya"}</p></div>}
               {msg.isImage && (
                 <div className="relative mb-2">
                   <Dialog>

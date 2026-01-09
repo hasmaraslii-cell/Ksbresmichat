@@ -132,7 +132,9 @@ export async function registerRoutes(
     if (!userId) return res.status(401).json({ message: "Giriş yapın" });
     
     const { targetId } = req.query;
+    console.log(`API: Fetching messages for user ${userId}, target ${targetId}`);
     const messages = await storage.getMessages(userId, targetId ? parseInt(targetId as string) : undefined);
+    console.log(`API: Found ${messages.length} messages`);
     res.json(messages);
   });
 
@@ -140,11 +142,14 @@ export async function registerRoutes(
     // @ts-ignore
     if (!req.session.userId) return res.status(401).json({ message: "Giriş yapın" });
     try {
+      console.log("API: Received message send request:", req.body);
       const input = api.messages.send.input.parse(req.body);
       // @ts-ignore
       const message = await storage.createMessage({ ...input, userId: req.session.userId });
+      console.log("API: Message created in DB:", message.id);
       res.status(201).json(message);
     } catch (err) {
+      console.error("API: Error sending message:", err);
       res.status(400).json({ message: "Gönderilemedi" });
     }
   });
