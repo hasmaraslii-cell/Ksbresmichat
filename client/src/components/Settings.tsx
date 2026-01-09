@@ -50,11 +50,18 @@ export function Settings() {
   };
 
   const handleSave = () => {
+    if (!formData.username.trim()) {
+      toast({ title: "Hata", description: "Kullanıcı adı boş olamaz", variant: "destructive" });
+      return;
+    }
     updateProfile(formData, { 
       onSuccess: () => {
-        toast({ title: "Profil güncellendi" });
+        toast({ title: "Başarılı", description: "Profil güncellendi" });
         queryClient.invalidateQueries({ queryKey: [api.users.me.path] });
-      } 
+      },
+      onError: (error: any) => {
+        toast({ title: "Hata", description: error.message || "Profil güncellenemedi", variant: "destructive" });
+      }
     });
   };
 
@@ -62,6 +69,7 @@ export function Settings() {
 
   return (
     <div className="flex-1 bg-black p-6 overflow-y-auto space-y-8 flex flex-col">
+      <h1 className="text-2xl font-bold text-white mb-2">Ayarlar</h1>
       <div className="flex flex-col items-center gap-4">
         <div className="relative group">
           <Avatar className="w-24 h-24 border-2 border-white/10">

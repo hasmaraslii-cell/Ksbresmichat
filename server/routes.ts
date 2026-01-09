@@ -81,7 +81,8 @@ export async function registerRoutes(
       const updated = await storage.updateUser(userId, input);
       res.json(updated);
     } catch (err) {
-      res.status(400).json({ message: "Hata" });
+      console.error("Update profile error:", err);
+      res.status(400).json({ message: "Profil güncellenirken hata oluştu" });
     }
   });
 

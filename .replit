@@ -43,3 +43,6 @@ waitForPort = 5000
 [userenv.shared]
 FIREBASE_DATABASE_URL = "ksbchatsohbetproject.firebaseapp.com"
 FIREBASE_DATA_KEY = "AIzaSyDKXMRbjcwwbOx4C9QFUhQCmeTXQRX0cb4"
+
+[agent]
+expertMode = true
