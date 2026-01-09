@@ -45,31 +45,40 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
   async getMessages(currentUserId?: number, targetId?: number): Promise<MessageWithUser[]> {
-    const messagesData = await db.select({ message: messages, sender: users })
-      .from(messages)
-      .innerJoin(users, eq(messages.userId, users.id))
-      .orderBy(asc(messages.createdAt));
-
-    let filteredMessages = messagesData;
-
+    let filteredMessages: { message: Message, sender: User }[] = [];
+    
     if (targetId) {
       // DM: messages between currentUserId and targetId
-      filteredMessages = messagesData.filter(m => 
-        (Number(m.message.userId) === Number(currentUserId) && Number(m.message.receiverId) === Number(targetId)) ||
-        (Number(m.message.userId) === Number(targetId) && Number(m.message.receiverId) === Number(currentUserId))
-      );
+      const targetNum = Number(targetId);
+      const currentNum = Number(currentUserId);
+      
+      filteredMessages = await db.select({ message: messages, sender: users })
+        .from(messages)
+        .innerJoin(users, eq(messages.userId, users.id))
+        .where(
+          or(
+            and(eq(messages.userId, currentNum), eq(messages.receiverId, targetNum)),
+            and(eq(messages.userId, targetNum), eq(messages.receiverId, currentNum))
+          )
+        )
+        .orderBy(asc(messages.createdAt));
     } else {
-      // Group: messages where receiverId is null OR undefined
-      filteredMessages = messagesData.filter(m => m.message.receiverId === null || m.message.receiverId === undefined);
+      // Group: messages where receiverId is null
+      filteredMessages = await db.select({ message: messages, sender: users })
+        .from(messages)
+        .innerJoin(users, eq(messages.userId, users.id))
+        .where(isNull(messages.receiverId))
+        .orderBy(asc(messages.createdAt));
     }
     
     // Limit frontend load to last 100
-    if (filteredMessages.length > 100) {
-      filteredMessages = filteredMessages.slice(-100);
+    let slicedMessages = filteredMessages;
+    if (slicedMessages.length > 100) {
+      slicedMessages = slicedMessages.slice(-100);
     }
 
     const result: MessageWithUser[] = [];
-    for (const m of filteredMessages) {
+    for (const m of slicedMessages) {
       let replyTo: (Message & { sender: User }) | undefined;
       if (m.message.parentId) {
         const [parent] = await db.select({ message: messages, sender: users }).from(messages).innerJoin(users, eq(messages.userId, users.id)).where(eq(messages.id, m.message.parentId));
