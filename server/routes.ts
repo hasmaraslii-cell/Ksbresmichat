@@ -46,6 +46,7 @@ export async function registerRoutes(
       if (!user || user.password !== input.password) {
         return res.status(401).json({ message: "Geçersiz giriş" });
       }
+      if (user.isBanned) return res.status(403).json({ message: "Hesabınız yasaklanmıştır" });
       // @ts-ignore
       req.session.userId = user.id;
       res.json(user);
@@ -91,8 +92,23 @@ export async function registerRoutes(
     // @ts-ignore
     const userId = req.session.userId;
     if (!userId) return res.status(401).json({ message: "Yetkisiz" });
-    const { friendId } = req.body;
-    await storage.addFriend(userId, friendId);
+    const { username } = req.body;
+    try {
+      await storage.addFriend(userId, username);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/users/:id/ban", async (req, res) => {
+    // @ts-ignore
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Yetkisiz" });
+    const user = await storage.getUser(userId);
+    if (!user?.isAdmin) return res.status(403).json({ message: "Yetkisiz" });
+    const banId = parseInt(req.params.id);
+    await storage.banUser(banId);
     res.json({ success: true });
   });
 

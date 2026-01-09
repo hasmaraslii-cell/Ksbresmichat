@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { users, messages, intelLinks, friends, type User, type InsertUser, type Message, type InsertMessage, type IntelLink, type MessageWithUser, type Friend } from "@shared/schema";
-import { eq, desc, asc, and, or } from "drizzle-orm";
+import { eq, desc, asc, and, or, ne, inArray } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -31,7 +31,10 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
   async searchUsers(query: string, excludeId: number): Promise<User[]> {
-    return await db.select().from(users).where(and(eq(users.username, query), eq(users.id, excludeId)));
+    return await db.select().from(users).where(and(eq(users.username, query), ne(users.id, excludeId)));
+  }
+  async banUser(id: number): Promise<void> {
+    await db.update(users).set({ isBanned: true }).where(eq(users.id, id));
   }
   async createUser(user: InsertUser): Promise<User> {
     const [newUser] = await db.insert(users).values(user).returning();
@@ -77,14 +80,17 @@ export class DatabaseStorage implements IStorage {
     const friendIds = userFriends.map(f => f.userId === userId ? f.friendId : f.userId);
     if (friendIds.length === 0) return [];
     
-    const friendUsers = await db.select().from(users).where(or(...friendIds.map(id => eq(users.id, id))));
+    const friendUsers = await db.select().from(users).where(inArray(users.id, friendIds));
     return friendUsers.map(u => {
       const relation = userFriends.find(f => f.userId === u.id || f.friendId === u.id);
       return { ...u, friendStatus: relation?.status || 'none' };
     });
   }
-  async addFriend(userId: number, friendId: number): Promise<void> {
-    await db.insert(friends).values({ userId, friendId, status: 'pending' });
+  async addFriend(userId: number, friendUsername: string): Promise<void> {
+    const [friend] = await db.select().from(users).where(eq(users.username, friendUsername));
+    if (!friend) throw new Error("Kullanıcı bulunamadı");
+    if (friend.id === userId) throw new Error("Kendinizi ekleyemezsiniz");
+    await db.insert(friends).values({ userId, friendId: friend.id, status: 'pending' });
   }
   async acceptFriend(userId: number, friendId: number): Promise<void> {
     await db.update(friends).set({ status: 'accepted' }).where(and(eq(friends.userId, friendId), eq(friends.friendId, userId)));
@@ -106,7 +112,6 @@ export class DatabaseStorage implements IStorage {
         username: "Raith1905",
         password: "Ksb_84_Z0Rd_X99_Phantom_Op_2026!#",
         codeName: "Raith1905",
-        rank: "Birlik Komutanı",
         isAdmin: true,
         isVerified: true
       });

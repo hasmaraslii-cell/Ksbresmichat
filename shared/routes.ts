@@ -71,7 +71,7 @@ export const api = {
     request: {
       method: 'POST' as const,
       path: '/api/friends/request',
-      input: z.object({ friendId: z.number() }),
+      input: z.object({ username: z.string() }),
       responses: {
         200: z.object({ success: z.boolean() }),
       }

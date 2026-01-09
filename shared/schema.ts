@@ -10,8 +10,10 @@ export const users = pgTable("users", {
   status: text("status").default("Çevrimiçi").notNull(),
   avatarUrl: text("avatar_url"),
   bio: text("bio"),
+  rank: text("rank"),
   isVerified: boolean("is_verified").default(false),
   isAdmin: boolean("is_admin").default(false),
+  isBanned: boolean("is_banned").default(false),
 });
 
 export const messages = pgTable("messages", {
@@ -21,6 +23,10 @@ export const messages = pgTable("messages", {
   content: text("content"),
   isImage: boolean("is_image").default(false),
   imageUrl: text("image_url"),
+  isVideo: boolean("is_video").default(false),
+  videoUrl: text("video_url"),
+  isAudio: boolean("is_audio").default(false),
+  audioUrl: text("audio_url"),
   operationNote: text("operation_note"), 
   createdAt: timestamp("created_at").defaultNow(),
 });

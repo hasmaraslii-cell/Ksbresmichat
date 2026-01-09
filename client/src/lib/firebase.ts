@@ -4,7 +4,7 @@ import { getDatabase } from "firebase/database";
 const firebaseConfig = {
   apiKey: "AIzaSy...",
   authDomain: "ksb-op.firebaseapp.com",
-  databaseURL: "https://ksb-op-default-rtdb.firebaseio.com",
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://ksb-op-default-rtdb.firebaseio.com",
   projectId: "ksb-op",
   storageBucket: "ksb-op.appspot.com",
   messagingSenderId: "000",
