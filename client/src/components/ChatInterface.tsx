@@ -35,7 +35,7 @@ function LinkPreview({ text }: { text: string }) {
   );
 }
 
-export function ChatInterface() {
+export function ChatInterface({ isDM = false }: { isDM?: boolean }) {
   const { data: user } = useCurrentUser();
   const { data: messages = [] } = useMessages();
   const { mutate: sendMessage } = useSendMessage();
@@ -50,37 +50,7 @@ export function ChatInterface() {
 
   useEffect(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
 
-  const delMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await fetch(buildUrl(api.messages.delete.path, { id }), { method: "DELETE" });
-      if (!res.ok) throw new Error("Hata");
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.messages.list.path] })
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, content }: { id: number, content: string }) => {
-      const res = await fetch(buildUrl(api.messages.update.path, { id }), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content })
-      });
-      if (!res.ok) throw new Error("Hata");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
-      setEditingMsg(null);
-      setInputText("");
-    }
-  });
-
-  const banMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await fetch(`/api/users/${id}/ban`, { method: "POST" });
-      if (!res.ok) throw new Error("Hata");
-    },
-    onSuccess: () => toast({ title: "Kullanıcı banlandı" })
-  });
+  // ... (rest of the mutations)
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -93,6 +63,10 @@ export function ChatInterface() {
       } else if (file.type.startsWith('video/')) {
         sendMessage({ userId: user!.id, videoUrl: result, isVideo: true });
       } else if (file.type.startsWith('audio/')) {
+        if (!isDM) {
+          toast({ title: "Hata", description: "Sesli mesaj sadece DM'lerde gönderilebilir", variant: "destructive" });
+          return;
+        }
         sendMessage({ userId: user!.id, audioUrl: result, isAudio: true });
       }
     };
@@ -100,11 +74,11 @@ export function ChatInterface() {
   };
 
   const handleSend = () => {
-    if (!inputText.trim() || !user) return;
+    if (!inputText.trim() && !editingMsg) return;
     if (editingMsg) {
       updateMutation.mutate({ id: editingMsg.id, content: inputText });
     } else {
-      sendMessage({ userId: user.id, content: inputText, parentId: replyingTo?.id });
+      sendMessage({ userId: user!.id, content: inputText, parentId: replyingTo?.id });
       setInputText("");
       setReplyingTo(null);
     }

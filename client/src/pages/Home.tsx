@@ -17,9 +17,8 @@ export default function Home() {
   return (
     <div className="h-screen w-full flex flex-col bg-black text-foreground overflow-hidden">
       <div className="flex-1 overflow-hidden relative flex flex-col max-w-md mx-auto w-full">
-        <header className="p-4 border-b border-border flex items-center justify-between bg-black/50 backdrop-blur-md z-30">
+        <header className="p-4 border-b border-border flex items-center justify-end bg-black/50 backdrop-blur-md z-30">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold tracking-widest text-white uppercase">KSB NETWORK</span>
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
           </div>
         </header>

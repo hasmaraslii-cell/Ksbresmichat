@@ -90,7 +90,31 @@ export class DatabaseStorage implements IStorage {
     const [friend] = await db.select().from(users).where(eq(users.username, friendUsername));
     if (!friend) throw new Error("Kullanıcı bulunamadı");
     if (friend.id === userId) throw new Error("Kendinizi ekleyemezsiniz");
+    
+    const [existing] = await db.select().from(friends).where(
+      or(
+        and(eq(friends.userId, userId), eq(friends.friendId, friend.id)),
+        and(eq(friends.userId, friend.id), eq(friends.friendId, userId))
+      )
+    );
+    
+    if (existing) {
+      if (existing.status === 'accepted') throw new Error("Zaten arkadaşsınız");
+      if (existing.userId === userId) throw new Error("İstek zaten gönderildi");
+      await db.update(friends).set({ status: 'accepted' }).where(eq(friends.id, existing.id));
+      return;
+    }
+
     await db.insert(friends).values({ userId, friendId: friend.id, status: 'pending' });
+  }
+
+  async clearDataExceptAdmin(): Promise<void> {
+    const admin = await this.getUserByUsername("Raith1905");
+    if (!admin) return;
+    
+    await db.delete(messages);
+    await db.delete(friends);
+    await db.delete(users).where(ne(users.id, admin.id));
   }
   async acceptFriend(userId: number, friendId: number): Promise<void> {
     await db.update(friends).set({ status: 'accepted' }).where(and(eq(friends.userId, friendId), eq(friends.friendId, userId)));

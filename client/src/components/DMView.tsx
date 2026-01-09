@@ -80,7 +80,8 @@ export function DMView() {
               </Avatar>
               <div>
                 <p className="text-sm font-bold">{f.username}</p>
-                <p className="text-[10px] text-muted-foreground uppercase">{f.friendStatus === 'accepted' ? 'Arkadaş' : 'İstek Bekliyor'}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">{f.fullName && `${f.fullName} • `}{f.friendStatus === 'accepted' ? 'Arkadaş' : 'İstek Bekliyor'}</p>
+                {f.bio && <p className="text-[10px] text-muted-foreground italic mt-1">{f.bio}</p>}
               </div>
             </div>
             {f.friendStatus === 'pending' && (

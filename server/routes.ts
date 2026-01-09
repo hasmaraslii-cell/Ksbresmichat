@@ -122,7 +122,12 @@ export async function registerRoutes(
   });
 
   app.get(api.messages.list.path, async (req, res) => {
-    res.json(await storage.getMessages());
+    // @ts-ignore
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Giriş yapın" });
+    
+    const messages = await storage.getMessages();
+    res.json(messages);
   });
 
   app.post(api.messages.send.path, async (req, res) => {
@@ -166,8 +171,23 @@ export async function registerRoutes(
     res.json(updated);
   });
 
-  app.get(api.intel.list.path, async (req, res) => {
-    res.json(await storage.getIntelLinks());
+  app.post("/api/admin/clear-data", async (req, res) => {
+    // @ts-ignore
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Yetkisiz" });
+    const user = await storage.getUser(userId);
+    if (!user?.isAdmin) return res.status(403).json({ message: "Yetkisiz" });
+    await storage.clearDataExceptAdmin();
+    res.json({ success: true });
+  });
+
+  app.get(api.users.search.path, async (req, res) => {
+    // @ts-ignore
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Yetkisiz" });
+    const { q } = req.query;
+    if (typeof q !== 'string') return res.json([]);
+    res.json(await storage.searchUsers(q, userId));
   });
 
   return httpServer;
