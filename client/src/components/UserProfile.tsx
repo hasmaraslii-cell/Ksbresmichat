@@ -21,7 +21,7 @@ export function UserProfile() {
             <div className="flex items-center gap-1">
               <h2 className="text-sm font-bold tracking-tight">{user.displayName || user.username}</h2>
               {user.isAdmin && <ShieldCheck className="w-3 h-3 text-blue-400" />}
-              {user.isBanned && <span className="text-[10px] text-red-500 font-bold ml-1 uppercase">[BANLI]</span>}
+              {user.isBanned && <span className="text-[10px] text-red-500 font-bold ml-1 uppercase">[YASAKLI]</span>}
             </div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">AKTİF KULLANICI</p>
           </div>
