@@ -37,7 +37,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/messages',
       responses: {
-        200: z.array(z.custom<typeof messages.$inferSelect & { sender: typeof users.$inferSelect }>()),
+        200: z.array(z.custom<any>()), // Simplified for deep nesting
       },
     },
     send: {

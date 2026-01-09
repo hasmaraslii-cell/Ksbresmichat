@@ -5,12 +5,12 @@ import {
   type Message, type InsertMessage,
   type IntelLink, type MessageWithUser
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, asc } from "drizzle-orm";
 
 export interface IStorage {
   // User
   getUser(id: number): Promise<User | undefined>;
-  getAnyUser(): Promise<User | undefined>; // For demo purposes, get the first user
+  getAnyUser(): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User>;
 
@@ -46,21 +46,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMessages(): Promise<MessageWithUser[]> {
-    // Join messages with users to get sender info
-    // This is a manual join in application logic or query builder
     const msgs = await db.select({
       message: messages,
       sender: users,
     })
     .from(messages)
     .innerJoin(users, eq(messages.userId, users.id))
-    .orderBy(desc(messages.createdAt)); // Newest first
+    .orderBy(asc(messages.createdAt));
 
-    // Flatten structure to match MessageWithUser
-    return msgs.map(({ message, sender }) => ({
-      ...message,
-      sender,
-    })).reverse(); // Return oldest first for chat flow
+    const result: MessageWithUser[] = [];
+    for (const m of msgs) {
+      let replyTo: (Message & { sender: User }) | undefined;
+      if (m.message.parentId) {
+        const [parent] = await db.select({
+          message: messages,
+          sender: users,
+        })
+        .from(messages)
+        .innerJoin(users, eq(messages.userId, users.id))
+        .where(eq(messages.id, m.message.parentId));
+        
+        if (parent) {
+          replyTo = { ...parent.message, sender: parent.sender };
+        }
+      }
+      result.push({ ...m.message, sender: m.sender, replyTo });
+    }
+    return result;
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {

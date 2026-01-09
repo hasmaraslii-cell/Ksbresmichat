@@ -9,22 +9,24 @@ export const users = pgTable("users", {
   rank: text("rank").default("Operatör").notNull(),
   status: text("status").default("Çevrimiçi").notNull(),
   avatarUrl: text("avatar_url"),
+  bio: text("bio"),
   isVerified: boolean("is_verified").default(false),
 });
 
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(), // Linked to users.id
+  userId: integer("user_id").notNull(), 
+  parentId: integer("parent_id"), // For replies
   content: text("content"),
   isImage: boolean("is_image").default(false),
   imageUrl: text("image_url"),
-  operationNote: text("operation_note"), // For images
+  operationNote: text("operation_note"), 
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const intelLinks = pgTable("intel_links", {
   id: serial("id").primaryKey(),
-  code: text("code").notNull(), // e.g. [REQ_SEC_01]
+  code: text("code").notNull(), 
   label: text("label").notNull(),
   url: text("url").notNull(),
   category: text("category").default("general"),
@@ -44,8 +46,10 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type IntelLink = typeof intelLinks.$inferSelect;
 
-// Combined type for chat display
-export type MessageWithUser = Message & { sender: User };
+export type MessageWithUser = Message & { 
+  sender: User;
+  replyTo?: Message & { sender: User };
+};
 
 export type CreateMessageRequest = InsertMessage;
 export type UpdateProfileRequest = Partial<InsertUser>;
