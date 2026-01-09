@@ -55,12 +55,12 @@ export class DatabaseStorage implements IStorage {
     if (targetId) {
       // DM: messages between currentUserId and targetId
       filteredMessages = messagesData.filter(m => 
-        (m.message.userId === currentUserId && m.message.receiverId === targetId) ||
-        (m.message.userId === targetId && m.message.receiverId === currentUserId)
+        (Number(m.message.userId) === Number(currentUserId) && Number(m.message.receiverId) === Number(targetId)) ||
+        (Number(m.message.userId) === Number(targetId) && Number(m.message.receiverId) === Number(currentUserId))
       );
     } else {
       // Group: messages where receiverId is null OR undefined
-      filteredMessages = messagesData.filter(m => !m.message.receiverId);
+      filteredMessages = messagesData.filter(m => m.message.receiverId === null || m.message.receiverId === undefined);
     }
     
     // Limit frontend load to last 100
