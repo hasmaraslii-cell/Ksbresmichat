@@ -66,20 +66,29 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Show a loading toast
+    const { id: toastId } = toast({ title: "Yükleniyor...", description: "Dosya hazırlanıyor..." });
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       const result = ev.target?.result as string;
-      const basePayload = { userId: user!.id, receiverId: targetUser?.id || null };
+      const basePayload = { 
+        userId: user!.id, 
+        receiverId: targetUser?.id || null,
+        content: `Media: ${file.name}` 
+      };
+      
       if (file.type.startsWith('image/')) {
-        sendMessage({ ...basePayload, imageUrl: result, isImage: true });
+        sendMessage({ ...basePayload, imageUrl: result, isImage: true }, {
+          onSuccess: () => toast({ title: "Başarılı", description: "Fotoğraf gönderildi" }),
+          onError: () => toast({ title: "Hata", description: "Fotoğraf gönderilemedi", variant: "destructive" })
+        });
       } else if (file.type.startsWith('video/')) {
-        sendMessage({ ...basePayload, videoUrl: result, isVideo: true });
-      } else if (file.type.startsWith('audio/')) {
-        if (!targetUser) {
-          toast({ title: "Hata", description: "Sesli mesaj sadece DM'lerde gönderilebilir", variant: "destructive" });
-          return;
-        }
-        sendMessage({ ...basePayload, audioUrl: result, isAudio: true });
+        sendMessage({ ...basePayload, videoUrl: result, isVideo: true }, {
+          onSuccess: () => toast({ title: "Başarılı", description: "Video gönderildi" }),
+          onError: () => toast({ title: "Hata", description: "Video gönderilemedi", variant: "destructive" })
+        });
       }
     };
     reader.readAsDataURL(file);

@@ -59,6 +59,7 @@ export function Settings() {
         toast({ title: "Başarılı", description: "Profil güncellendi" });
         queryClient.invalidateQueries({ queryKey: [api.users.me.path] });
         queryClient.refetchQueries({ queryKey: [api.users.me.path] });
+        setTimeout(() => window.location.reload(), 1000); // Force full reload to be sure
       },
       onError: (error: any) => {
         toast({ title: "Hata", description: error.message || "Profil güncellenemedi", variant: "destructive" });
