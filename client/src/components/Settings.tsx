@@ -58,12 +58,25 @@ export function Settings() {
       onSuccess: () => {
         toast({ title: "Başarılı", description: "Profil güncellendi" });
         queryClient.invalidateQueries({ queryKey: [api.users.me.path] });
+        queryClient.refetchQueries({ queryKey: [api.users.me.path] });
       },
       onError: (error: any) => {
         toast({ title: "Hata", description: error.message || "Profil güncellenemedi", variant: "destructive" });
       }
     });
   };
+
+  // Force re-render user data to ensure it's up to date
+  useEffect(() => {
+    if (user) {
+      setFormData({ 
+        username: user.username || "", 
+        bio: user.bio || "", 
+        avatarUrl: user.avatarUrl || "",
+        displayName: user.displayName || ""
+      });
+    }
+  }, [user]);
 
   if (!user) return null;
 

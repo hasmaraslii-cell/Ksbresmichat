@@ -167,7 +167,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
                 </div>
               )}
               <div className="leading-snug break-words max-w-full overflow-hidden">
-                {parts.map((part, i) => {
+                {parts.map((part: string, i: number) => {
                   if (part.match(urlPattern)) {
                     return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline hover:text-blue-300 break-all">{part}</a>;
                   }

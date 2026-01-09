@@ -20,7 +20,7 @@ export default function Home() {
       <div className="flex-1 overflow-hidden relative flex flex-col max-w-md mx-auto w-full">
         <header className="p-4 border-b border-border flex items-center justify-between bg-black/50 backdrop-blur-md z-30">
           <h1 className="text-xs font-black tracking-[0.4em] uppercase opacity-80">
-            {activeTab === "chat" ? (targetUser ? "ÖZEL HAT" : "GENEL") : activeTab.toUpperCase()}
+            {activeTab === "chat" ? (targetUser ? "ÖZEL HAT" : "GENEL") : (activeTab === "settings" ? "AYARLAR" : activeTab.toUpperCase())}
           </h1>
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />

@@ -12,7 +12,7 @@ export function UserProfile() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10 border border-border">
-            <AvatarImage src={user.avatarUrl} />
+            <AvatarImage src={user.avatarUrl || undefined} />
             <AvatarFallback className="bg-muted text-xs">
               {user.username.substring(0, 2)}
             </AvatarFallback>
