@@ -25,6 +25,13 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const friends = pgTable("friends", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  friendId: integer("friend_id").notNull(),
+  status: text("status").default("pending").notNull(), // 'pending', 'accepted'
+});
+
 export const intelLinks = pgTable("intel_links", {
   id: serial("id").primaryKey(),
   code: text("code").notNull(), 
@@ -42,6 +49,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type IntelLink = typeof intelLinks.$inferSelect;
+export type Friend = typeof friends.$inferSelect;
 
 export type MessageWithUser = Message & { 
   sender: User;

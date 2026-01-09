@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertUserSchema, insertMessageSchema, users, messages, intelLinks, loginSchema } from './schema';
+import { insertUserSchema, insertMessageSchema, users, messages, intelLinks, loginSchema, friends } from './schema';
 
 export const errorSchemas = {
   validation: z.object({ message: z.string(), field: z.string().optional() }),
@@ -43,6 +43,13 @@ export const api = {
         401: errorSchemas.unauthorized,
       },
     },
+    search: {
+      method: 'GET' as const,
+      path: '/api/users/search',
+      responses: {
+        200: z.array(z.custom<typeof users.$inferSelect>()),
+      }
+    },
     update: {
       method: 'PATCH' as const,
       path: '/api/users/me',
@@ -51,6 +58,31 @@ export const api = {
         200: z.custom<typeof users.$inferSelect>(),
         401: errorSchemas.unauthorized,
       },
+    }
+  },
+  friends: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/friends',
+      responses: {
+        200: z.array(z.custom<typeof users.$inferSelect & { friendStatus: string }>()),
+      }
+    },
+    request: {
+      method: 'POST' as const,
+      path: '/api/friends/request',
+      input: z.object({ friendId: z.number() }),
+      responses: {
+        200: z.object({ success: z.boolean() }),
+      }
+    },
+    accept: {
+      method: 'POST' as const,
+      path: '/api/friends/accept',
+      input: z.object({ friendId: z.number() }),
+      responses: {
+        200: z.object({ success: z.boolean() }),
+      }
     }
   },
   messages: {

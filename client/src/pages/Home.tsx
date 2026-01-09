@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useCurrentUser } from "@/hooks/use-ksb";
 import { UserProfile } from "@/components/UserProfile";
 import { ChatInterface } from "@/components/ChatInterface";
 import { DMView } from "@/components/DMView";
 import { Settings } from "@/components/Settings";
 import { Auth } from "@/components/Auth";
-import { MessageSquare, Settings as SettingsIcon, Users, Phone, Video } from "lucide-react";
+import { MessageSquare, Settings as SettingsIcon, Users } from "lucide-react";
 
 export default function Home() {
   const { data: user, isLoading } = useCurrentUser();
@@ -19,12 +19,8 @@ export default function Home() {
       <div className="flex-1 overflow-hidden relative flex flex-col max-w-md mx-auto w-full">
         <header className="p-4 border-b border-border flex items-center justify-between bg-black/50 backdrop-blur-md z-30">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold tracking-widest text-white">KSB NETWORK</span>
+            <span className="text-xs font-bold tracking-widest text-white uppercase">KSB NETWORK</span>
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-          </div>
-          <div className="flex items-center gap-4 text-muted-foreground">
-            <button className="hover:text-white transition-colors"><Phone className="w-5 h-5" /></button>
-            <button className="hover:text-white transition-colors"><Video className="w-5 h-5" /></button>
           </div>
         </header>
 

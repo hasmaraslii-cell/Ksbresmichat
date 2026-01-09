@@ -1,10 +1,11 @@
 import { db } from "./db";
-import { users, messages, intelLinks, type User, type InsertUser, type Message, type InsertMessage, type IntelLink, type MessageWithUser } from "@shared/schema";
-import { eq, desc, asc } from "drizzle-orm";
+import { users, messages, intelLinks, friends, type User, type InsertUser, type Message, type InsertMessage, type IntelLink, type MessageWithUser, type Friend } from "@shared/schema";
+import { eq, desc, asc, and, or } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  searchUsers(query: string, excludeId: number): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User>;
   getMessages(): Promise<MessageWithUser[]>;
@@ -13,6 +14,9 @@ export interface IStorage {
   deleteMessage(id: number): Promise<void>;
   updateMessage(id: number, content: string): Promise<Message>;
   getIntelLinks(): Promise<IntelLink[]>;
+  getFriends(userId: number): Promise<(User & { friendStatus: string })[]>;
+  addFriend(userId: number, friendId: number): Promise<void>;
+  acceptFriend(userId: number, friendId: number): Promise<void>;
   seedIntelLinks(): Promise<void>;
   seedUsers(): Promise<void>;
 }
@@ -25,6 +29,9 @@ export class DatabaseStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
+  }
+  async searchUsers(query: string, excludeId: number): Promise<User[]> {
+    return await db.select().from(users).where(and(eq(users.username, query), eq(users.id, excludeId)));
   }
   async createUser(user: InsertUser): Promise<User> {
     const [newUser] = await db.insert(users).values(user).returning();
@@ -64,6 +71,23 @@ export class DatabaseStorage implements IStorage {
   }
   async getIntelLinks(): Promise<IntelLink[]> {
     return await db.select().from(intelLinks);
+  }
+  async getFriends(userId: number): Promise<(User & { friendStatus: string })[]> {
+    const userFriends = await db.select().from(friends).where(or(eq(friends.userId, userId), eq(friends.friendId, userId)));
+    const friendIds = userFriends.map(f => f.userId === userId ? f.friendId : f.userId);
+    if (friendIds.length === 0) return [];
+    
+    const friendUsers = await db.select().from(users).where(or(...friendIds.map(id => eq(users.id, id))));
+    return friendUsers.map(u => {
+      const relation = userFriends.find(f => f.userId === u.id || f.friendId === u.id);
+      return { ...u, friendStatus: relation?.status || 'none' };
+    });
+  }
+  async addFriend(userId: number, friendId: number): Promise<void> {
+    await db.insert(friends).values({ userId, friendId, status: 'pending' });
+  }
+  async acceptFriend(userId: number, friendId: number): Promise<void> {
+    await db.update(friends).set({ status: 'accepted' }).where(and(eq(friends.userId, friendId), eq(friends.friendId, userId)));
   }
   async seedIntelLinks(): Promise<void> {
     const count = await db.select().from(intelLinks);

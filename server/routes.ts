@@ -69,15 +69,40 @@ export async function registerRoutes(
 
   app.patch(api.users.update.path, async (req, res) => {
     // @ts-ignore
-    if (!req.session.userId) return res.status(401).json({ message: "Yetkisiz" });
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Yetkisiz" });
     try {
       const input = api.users.update.input.parse(req.body);
-      // @ts-ignore
-      const updated = await storage.updateUser(req.session.userId, input);
+      const updated = await storage.updateUser(userId, input);
       res.json(updated);
     } catch (err) {
       res.status(400).json({ message: "Hata" });
     }
+  });
+
+  app.get(api.friends.list.path, async (req, res) => {
+    // @ts-ignore
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Yetkisiz" });
+    res.json(await storage.getFriends(userId));
+  });
+
+  app.post(api.friends.request.path, async (req, res) => {
+    // @ts-ignore
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Yetkisiz" });
+    const { friendId } = req.body;
+    await storage.addFriend(userId, friendId);
+    res.json({ success: true });
+  });
+
+  app.post(api.friends.accept.path, async (req, res) => {
+    // @ts-ignore
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "Yetkisiz" });
+    const { friendId } = req.body;
+    await storage.acceptFriend(userId, friendId);
+    res.json({ success: true });
   });
 
   app.get(api.messages.list.path, async (req, res) => {
