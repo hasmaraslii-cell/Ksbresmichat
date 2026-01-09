@@ -37,3 +37,9 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[userenv]
+
+[userenv.shared]
+FIREBASE_DATABASE_URL = "ksbchatsohbetproject.firebaseapp.com"
+FIREBASE_DATA_KEY = "AIzaSyDKXMRbjcwwbOx4C9QFUhQCmeTXQRX0cb4"
