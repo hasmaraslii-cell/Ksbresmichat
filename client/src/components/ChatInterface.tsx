@@ -160,8 +160,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
             {!isMe && (
               <div className="flex items-center gap-1 mb-0.5 px-1">
                 <span 
-                  className="text-[10px] font-bold" 
-                  style={{ color: msg.sender.nameColor || '#ffffff' }}
+                  className="text-[10px] font-bold text-muted-foreground"
                 >
                   {msg.sender.displayName || msg.sender.username}
                 </span>
@@ -230,7 +229,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
               <AvatarImage src={targetUser.avatarUrl} />
               <AvatarFallback>{targetUser.username.substring(0, 2)}</AvatarFallback>
             </Avatar>
-            <p className="font-bold" style={{ color: targetUser.nameColor || '#ffffff' }}>
+            <p className="font-bold">
               {targetUser.displayName || targetUser.username}
             </p>
             <p className="text-xs uppercase tracking-widest">{targetUser.codeName}</p>

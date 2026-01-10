@@ -50,7 +50,7 @@ export function useMessages(targetId?: number) {
       console.log("Hooks: Messages received:", data.length);
       return data;
     },
-    refetchInterval: 1000, // Faster polling (1s)
+    refetchInterval: 500, // Very fast polling for "real-time" feel
   });
 }
 

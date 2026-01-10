@@ -77,7 +77,8 @@ export function Settings() {
         username: user.username || "", 
         bio: user.bio || "", 
         avatarUrl: user.avatarUrl || "",
-        displayName: user.displayName || ""
+        displayName: user.displayName || "",
+        nameColor: (user as any).nameColor || "#ffffff"
       });
     }
   }, [user]);
@@ -106,7 +107,6 @@ export function Settings() {
       <div className="space-y-4 flex-1">
         <div className="space-y-1"><label className="text-[10px] font-bold text-muted-foreground uppercase">Görünen İsim</label><Input value={formData.displayName} onChange={e => setFormData(p => ({ ...p, displayName: e.target.value }))} className="bg-[#1a1a1a] border-none rounded-xl h-12" placeholder="Görünen isminizi girin" /></div>
         <div className="space-y-1"><label className="text-[10px] font-bold text-muted-foreground uppercase">Kullanıcı Adı</label><Input value={formData.username} onChange={e => setFormData(p => ({ ...p, username: e.target.value }))} className="bg-[#1a1a1a] border-none rounded-xl h-12" /></div>
-        <div className="space-y-1"><label className="text-[10px] font-bold text-muted-foreground uppercase">İsim Rengi</label><Input type="color" value={formData.nameColor} onChange={e => setFormData(p => ({ ...p, nameColor: e.target.value }))} className="bg-[#1a1a1a] border-none rounded-xl h-12 p-1" /></div>
         <div className="space-y-1"><label className="text-[10px] font-bold text-muted-foreground uppercase">Biyografi</label><Textarea value={formData.bio} onChange={e => setFormData(p => ({ ...p, bio: e.target.value }))} className="bg-[#1a1a1a] border-none rounded-xl h-32" /></div>
         <Button onClick={handleSave} className="w-full bg-white text-black rounded-xl h-12 font-bold uppercase">PROFİLİ KAYDET</Button>
         <Button onClick={() => logoutMutation.mutate()} variant="destructive" className="w-full rounded-xl h-12 font-bold uppercase flex items-center justify-center gap-2">

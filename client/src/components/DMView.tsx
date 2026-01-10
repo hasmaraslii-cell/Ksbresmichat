@@ -78,7 +78,7 @@ export function DMView({ onStartChat }: { onStartChat?: (friend: any) => void })
                 <AvatarFallback>{f.username.substring(0, 2)}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <p className="text-sm font-bold" style={{ color: f.nameColor || '#ffffff' }}>{f.displayName || f.username}</p>
+                <p className="text-sm font-bold">{f.displayName || f.username}</p>
                 <p className="text-[10px] text-muted-foreground uppercase">{f.friendStatus === 'accepted' ? 'Arkadaş' : 'İstek Bekliyor'}</p>
                 {f.bio && (
                   <p className="text-[10px] text-muted-foreground italic mt-1 max-w-[150px] truncate">
