@@ -3,9 +3,6 @@ import { api } from "@shared/routes";
 import { type InsertMessage, type MessageWithUser } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
-// Types from routes
-type UpdateProfileRequest = any; 
-
 // === USER HOOKS ===
 
 export function useCurrentUser() {
@@ -22,7 +19,7 @@ export function useCurrentUser() {
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (updates: UpdateProfileRequest) => {
+    mutationFn: async (updates: any) => {
       const res = await fetch(api.users.update.path, {
         method: api.users.update.method,
         headers: { "Content-Type": "application/json" },
@@ -51,11 +48,8 @@ export function useMessages(targetId?: number) {
       if (data.length > 0) {
         const lastMsg = data[data.length - 1];
         const lastNotifiedId = localStorage.getItem('lastNotifiedMsgId');
-        
-        // Use a more robust way to get current user ID
         const currentUserId = (window as any).KSB_USER_ID;
         
-        // Only notify if it's a new message and not from the current user
         if (lastNotifiedId !== String(lastMsg.id) && currentUserId && lastMsg.userId !== currentUserId) { 
            if ("Notification" in window && Notification.permission === "granted") {
              new Notification(`Yeni Mesaj: ${lastMsg.sender.username}`, {
@@ -69,7 +63,7 @@ export function useMessages(targetId?: number) {
       
       return data;
     },
-    refetchInterval: 3000, // Slower interval to prevent lag
+    refetchInterval: 3000,
     staleTime: 1000,
   });
 }
@@ -79,7 +73,6 @@ export function useSendMessage() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async (data: InsertMessage) => {
-      console.log("Hooks: Sending message payload:", data);
       const res = await fetch(api.messages.send.path, {
         method: api.messages.send.method,
         headers: { "Content-Type": "application/json" },
@@ -95,7 +88,6 @@ export function useSendMessage() {
       queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
     },
     onError: (error: Error) => {
-      console.error("Hooks: Send message failed:", error);
       toast({
         title: "Hata",
         description: "Mesaj gönderilemedi: " + error.message,
@@ -136,6 +128,8 @@ export function useUpdateMessage() {
     },
   });
 }
+
+// === INTEL HOOKS ===
 
 export function useIntelLinks() {
   return useQuery({

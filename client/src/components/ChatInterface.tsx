@@ -1,5 +1,5 @@
-import { useRef, useEffect, useState } from "react";
-import { useCurrentUser, useMessages, useSendMessage } from "@/hooks/use-ksb";
+import { useRef, useEffect, useState, useMemo } from "react";
+import { useCurrentUser, useMessages, useSendMessage, useDeleteMessage, useUpdateMessage } from "@/hooks/use-ksb";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Paperclip, X, Trash2, Edit2, Download, ExternalLink, ShieldCheck, Play, Mic, Ban } from "lucide-react";
 import { format } from "date-fns";
@@ -15,49 +15,28 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
-  // Use custom query for DM filtering
   const { data: messages = [] } = useMessages(targetUser?.id);
   const { mutate: sendMessage } = useSendMessage();
+  const { mutate: deleteMessage } = useDeleteMessage();
+  const { mutate: updateMessage } = useUpdateMessage();
+  
   const [optimisticMessages, setOptimisticMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
-  // Update optimistic messages when server data changes
   useEffect(() => {
-    setOptimisticMessages([]);
-  }, [messages]);
+    if (messages.length > 0) {
+      setOptimisticMessages([]);
+    }
+  }, [messages.length]);
 
-  const allMessages = [...messages, ...optimisticMessages];
+  const allMessages = useMemo(() => [...messages, ...optimisticMessages], [messages, optimisticMessages]);
   const [replyingTo, setReplyingTo] = useState<any>(null);
   const [editingMsg, setEditingMsg] = useState<any>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, content }: { id: number, content: string }) => {
-      const res = await fetch(`/api/messages/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content })
-      });
-      if (!res.ok) throw new Error();
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
-      setEditingMsg(null);
-      setInputText("");
-    }
-  });
-
-  const delMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await fetch(`/api/messages/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.messages.list.path] })
-  });
+  useEffect(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), [allMessages.length]);
 
   const banMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -70,9 +49,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
     }
   });
 
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -91,8 +68,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
     
     reader.onprogress = (event) => {
       if (event.lengthComputable) {
-        const progress = Math.round((event.loaded / event.total) * 100);
-        setUploadProgress(progress);
+        setUploadProgress(Math.round((event.loaded / event.total) * 100));
       }
     };
 
@@ -108,36 +84,20 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
       if (fileRef.current) fileRef.current.value = "";
 
       if (file.type.startsWith('image/')) {
-        sendMessage({ ...basePayload, imageUrl: result, isImage: true }, {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
-          },
-          onError: () => toast({ title: "Hata", description: "Fotoğraf gönderilemedi", variant: "destructive" })
-        });
+        sendMessage({ ...basePayload, imageUrl: result, isImage: true });
       } else if (file.type.startsWith('video/')) {
-        sendMessage({ ...basePayload, videoUrl: result, isVideo: true, isImage: false }, {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
-          },
-          onError: () => toast({ title: "Hata", description: "Video gönderilemedi", variant: "destructive" })
-        });
+        sendMessage({ ...basePayload, videoUrl: result, isVideo: true, isImage: false });
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const { mutate: deleteMessage } = useDeleteMessage();
-  const { mutate: updateMessage } = useUpdateMessage();
-
   const handleSend = () => {
     if (!inputText.trim() && !editingMsg) return;
     if (editingMsg) {
-      updateMessage({ id: editingMsg.id, content: inputText }, {
-        onSuccess: () => {
-          setEditingMsg(null);
-          setInputText("");
-        }
-      });
+      updateMessage({ id: editingMsg.id, content: inputText });
+      setEditingMsg(null);
+      setInputText("");
     } else {
       const tempId = Date.now();
       const newMessage = {
@@ -192,9 +152,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
           <div className="flex flex-col">
             {!isMe && (
               <div className="flex items-center gap-1 mb-0.5 px-1">
-                <span 
-                  className="text-[10px] font-bold text-muted-foreground"
-                >
+                <span className="text-[10px] font-bold text-muted-foreground">
                   {msg.sender.displayName || msg.sender.username}
                 </span>
                 {msg.sender.isAdmin && <ShieldCheck className="w-3 h-3 text-blue-400" />}
@@ -262,9 +220,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
               <AvatarImage src={targetUser.avatarUrl} />
               <AvatarFallback>{targetUser.username.substring(0, 2)}</AvatarFallback>
             </Avatar>
-            <p className="font-bold">
-              {targetUser.displayName || targetUser.username}
-            </p>
+            <p className="font-bold">{targetUser.displayName || targetUser.username}</p>
             <p className="text-xs uppercase tracking-widest">{targetUser.codeName}</p>
             {targetUser.bio && (
               <p className="text-xs text-center mt-2 max-w-[200px] break-words">
