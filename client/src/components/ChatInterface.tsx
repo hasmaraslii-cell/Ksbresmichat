@@ -67,6 +67,17 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
     const file = e.target.files?.[0];
     if (!file) return;
     
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({
+        title: "Dosya Çok Büyük",
+        description: "Lütfen 10MB'dan küçük bir dosya seçin.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Show a loading toast
     const { id: toastId } = toast({ title: "Yükleniyor...", description: "Dosya hazırlanıyor..." });
 
@@ -148,7 +159,12 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
           <div className="flex flex-col">
             {!isMe && (
               <div className="flex items-center gap-1 mb-0.5 px-1">
-                <span className="text-[10px] font-bold text-muted-foreground">{msg.sender.displayName || msg.sender.username}</span>
+                <span 
+                  className="text-[10px] font-bold" 
+                  style={{ color: msg.sender.nameColor || '#ffffff' }}
+                >
+                  {msg.sender.displayName || msg.sender.username}
+                </span>
                 {msg.sender.isAdmin && <ShieldCheck className="w-3 h-3 text-blue-400" />}
                 {user?.isAdmin && (
                   <button onClick={() => banMutation.mutate(msg.userId)} className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 ml-1">
@@ -214,8 +230,19 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
               <AvatarImage src={targetUser.avatarUrl} />
               <AvatarFallback>{targetUser.username.substring(0, 2)}</AvatarFallback>
             </Avatar>
-            <p className="font-bold">{targetUser.displayName || targetUser.username}</p>
+            <p className="font-bold" style={{ color: targetUser.nameColor || '#ffffff' }}>
+              {targetUser.displayName || targetUser.username}
+            </p>
             <p className="text-xs uppercase tracking-widest">{targetUser.codeName}</p>
+            {targetUser.bio && (
+              <p className="text-xs text-center mt-2 max-w-[200px] break-words">
+                {targetUser.bio.split(/(https?:\/\/[^\s]+)/g).map((part: string, i: number) => 
+                  part.match(/(https?:\/\/[^\s]+)/g) 
+                    ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">{part}</a>
+                    : part
+                )}
+              </p>
+            )}
             <div className="mt-4 px-4 py-1 bg-white/5 rounded-full border border-white/10 text-[10px]">GÜVENLİ ÖZEL KANAL</div>
           </div>
         )}

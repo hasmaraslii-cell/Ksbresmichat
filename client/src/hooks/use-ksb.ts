@@ -48,9 +48,9 @@ export function useMessages(targetId?: number) {
       if (!res.ok) throw new Error("Failed to fetch messages");
       const data = await res.json();
       console.log("Hooks: Messages received:", data.length);
-      return data; // Return raw data, we'll handle validation if needed or just trust the backend for now
+      return data;
     },
-    refetchInterval: 2000,
+    refetchInterval: 1000, // Faster polling (1s)
   });
 }
 

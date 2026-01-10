@@ -78,17 +78,20 @@ export function DMView({ onStartChat }: { onStartChat?: (friend: any) => void })
                 <AvatarFallback>{f.username.substring(0, 2)}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <p className="text-sm font-bold">{f.displayName || f.username}</p>
+                <p className="text-sm font-bold" style={{ color: f.nameColor || '#ffffff' }}>{f.displayName || f.username}</p>
                 <p className="text-[10px] text-muted-foreground uppercase">{f.friendStatus === 'accepted' ? 'Arkadaş' : 'İstek Bekliyor'}</p>
-                {f.bio && <p className="text-[10px] text-muted-foreground italic mt-1">{f.bio}</p>}
+                {f.bio && (
+                  <p className="text-[10px] text-muted-foreground italic mt-1 max-w-[150px] truncate">
+                    {f.bio}
+                  </p>
+                )}
               </div>
               {f.friendStatus === 'accepted' && (
                 <button 
                   onClick={() => {
                     onStartChat?.(f);
-                    toast({ title: "Sohbet başlatılıyor", description: `${f.displayName || f.username} ile sohbet açılıyor...` });
                   }}
-                  className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"
+                  className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
                 >
                   <MessageSquare className="w-4 h-4" />
                 </button>

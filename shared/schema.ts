@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   status: text("status").default("Çevrimiçi").notNull(),
   avatarUrl: text("avatar_url"),
   bio: text("bio"),
+  nameColor: text("name_color").default("#ffffff"),
   rank: text("rank"),
   isVerified: boolean("is_verified").default(false),
   isAdmin: boolean("is_admin").default(false),
