@@ -42,15 +42,13 @@ export function useMessages(targetId?: number) {
   return useQuery<MessageWithUser[]>({
     queryKey: [api.messages.list.path, targetId],
     queryFn: async () => {
-      console.log("Hooks: Fetching messages for targetId:", targetId);
       const url = targetId ? `${api.messages.list.path}?targetId=${targetId}` : api.messages.list.path;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch messages");
-      const data = await res.json();
-      console.log("Hooks: Messages received:", data.length);
-      return data;
+      return await res.json();
     },
-    refetchInterval: 500, // Very fast polling for "real-time" feel
+    refetchInterval: 3000, // Slower interval to prevent lag
+    staleTime: 1000,
   });
 }
 

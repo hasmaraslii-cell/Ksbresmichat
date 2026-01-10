@@ -18,8 +18,14 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
   // Use custom query for DM filtering
   const { data: messages = [] } = useMessages(targetUser?.id);
   const { mutate: sendMessage } = useSendMessage();
-  
-  const [inputText, setInputText] = useState("");
+  const [optimisticMessages, setOptimisticMessages] = useState<any[]>([]);
+
+  // Update optimistic messages when server data changes
+  useEffect(() => {
+    setOptimisticMessages([]);
+  }, [messages]);
+
+  const allMessages = [...messages, ...optimisticMessages];
   const [replyingTo, setReplyingTo] = useState<any>(null);
   const [editingMsg, setEditingMsg] = useState<any>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -119,6 +125,19 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
     if (editingMsg) {
       updateMutation.mutate({ id: editingMsg.id, content: inputText });
     } else {
+      const tempId = Date.now();
+      const newMessage = {
+        id: tempId,
+        userId: user!.id,
+        receiverId: targetUser?.id || null,
+        content: inputText,
+        parentId: replyingTo?.id,
+        createdAt: new Date().toISOString(),
+        sender: user,
+        isOptimistic: true
+      };
+      
+      setOptimisticMessages(prev => [...prev, newMessage]);
       sendMessage({ 
         userId: user!.id, 
         receiverId: targetUser?.id || null,
@@ -149,7 +168,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
         key={msg.id} 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className={cn("flex flex-col gap-1 w-full", isMe ? "items-end" : "items-start")}
+        className={cn("flex flex-col gap-1 w-full", isMe ? "items-end" : "items-start", msg.isOptimistic && "opacity-70")}
       >
         <div className={cn("flex items-end gap-2 max-w-[85%]", isMe ? "flex-row-reverse" : "flex-row")}>
           <Avatar className="w-8 h-8 shrink-0">
@@ -245,7 +264,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
             <div className="mt-4 px-4 py-1 bg-white/5 rounded-full border border-white/10 text-[10px]">GÜVENLİ ÖZEL KANAL</div>
           </div>
         )}
-        {messages.map(renderMessage)}
+        {allMessages.map(renderMessage)}
         <div ref={scrollRef} />
       </div>
 
