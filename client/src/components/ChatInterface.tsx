@@ -70,26 +70,34 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
     }
   });
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Check file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024;
+    const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
         title: "Dosya Çok Büyük",
-        description: "Lütfen 10MB'dan küçük bir dosya seçin.",
+        description: "Lütfen 50MB'dan küçük bir dosya seçin.",
         variant: "destructive"
       });
       return;
     }
 
-    // Show a loading toast
-    const { id: toastId } = toast({ title: "Yükleniyor...", description: "Dosya hazırlanıyor..." });
-
+    setUploadProgress(0);
     const reader = new FileReader();
+    
+    reader.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const progress = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(progress);
+      }
+    };
+
     reader.onload = (ev) => {
+      setUploadProgress(null);
       const result = ev.target?.result as string;
       const basePayload = { 
         userId: user!.id, 
@@ -97,13 +105,11 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
         content: `Media: ${file.name}` 
       };
       
-      // Clear input and show immediate feedback
       if (fileRef.current) fileRef.current.value = "";
 
       if (file.type.startsWith('image/')) {
         sendMessage({ ...basePayload, imageUrl: result, isImage: true }, {
           onSuccess: () => {
-            toast({ title: "Başarılı", description: "Fotoğraf gönderildi" });
             queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
           },
           onError: () => toast({ title: "Hata", description: "Fotoğraf gönderilemedi", variant: "destructive" })
@@ -111,7 +117,6 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
       } else if (file.type.startsWith('video/')) {
         sendMessage({ ...basePayload, videoUrl: result, isVideo: true, isImage: false }, {
           onSuccess: () => {
-            toast({ title: "Başarılı", description: "Video gönderildi" });
             queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
           },
           onError: () => toast({ title: "Hata", description: "Video gönderilemedi", variant: "destructive" })
@@ -121,10 +126,18 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
     reader.readAsDataURL(file);
   };
 
+  const { mutate: deleteMessage } = useDeleteMessage();
+  const { mutate: updateMessage } = useUpdateMessage();
+
   const handleSend = () => {
     if (!inputText.trim() && !editingMsg) return;
     if (editingMsg) {
-      updateMutation.mutate({ id: editingMsg.id, content: inputText });
+      updateMessage({ id: editingMsg.id, content: inputText }, {
+        onSuccess: () => {
+          setEditingMsg(null);
+          setInputText("");
+        }
+      });
     } else {
       const tempId = Date.now();
       const newMessage = {
@@ -231,7 +244,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
             </div>
             <div className={cn("flex items-center gap-2 mt-1 px-1", isMe ? "justify-end" : "justify-start")}>
               <span className="text-[9px] text-muted-foreground">{format(new Date(msg.createdAt), "HH:mm")}</span>
-              {(isMe || user?.isAdmin) && <button onClick={() => delMutation.mutate(msg.id)} className="text-destructive hover:opacity-100 opacity-40"><Trash2 className="w-3 h-3" /></button>}
+              {(isMe || user?.isAdmin) && <button onClick={() => deleteMessage(msg.id)} className="text-destructive hover:opacity-100 opacity-40"><Trash2 className="w-3 h-3" /></button>}
               {isMe && <button onClick={() => { setEditingMsg(msg); setInputText(msg.content || ""); }} className="text-muted-foreground hover:opacity-100 opacity-40"><Edit2 className="w-3 h-3" /></button>}
             </div>
           </div>
@@ -271,6 +284,17 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
 
       <div className="p-4 bg-black border-t border-border">
         <AnimatePresence>
+          {uploadProgress !== null && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-2 p-2 bg-[#1a1a1a] rounded-lg border border-white/10">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-bold uppercase">Dosya Yükleniyor...</span>
+                <span className="text-[10px]">{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+                <div className="bg-white h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+              </div>
+            </motion.div>
+          )}
           {replyingTo && <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="mb-2 p-2 bg-[#1a1a1a] rounded-lg flex items-center justify-between border-l-2 border-white"><div className="min-w-0"><p className="text-[10px] font-bold">Yanıtlanan: {replyingTo.sender.displayName || replyingTo.sender.username}</p><p className="text-xs truncate">{replyingTo.content || "Medya"}</p></div><button onClick={() => setReplyingTo(null)}><X className="w-4 h-4" /></button></motion.div>}
         </AnimatePresence>
         <div className="flex items-center gap-2">

@@ -92,7 +92,6 @@ export function useSendMessage() {
       return res.json();
     },
     onSuccess: () => {
-      console.log("Hooks: Message sent successfully, invalidating queries");
       queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
     },
     onError: (error: Error) => {
@@ -106,7 +105,37 @@ export function useSendMessage() {
   });
 }
 
-// === INTEL HOOKS ===
+export function useDeleteMessage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`${api.messages.delete.path}/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete message");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
+    },
+  });
+}
+
+export function useUpdateMessage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, content }: { id: number, content: string }) => {
+      const res = await fetch(`${api.messages.update.path}/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      if (!res.ok) throw new Error("Failed to update message");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
+    },
+  });
+}
 
 export function useIntelLinks() {
   return useQuery({
