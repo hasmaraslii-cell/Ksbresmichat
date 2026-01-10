@@ -45,7 +45,29 @@ export function useMessages(targetId?: number) {
       const url = targetId ? `${api.messages.list.path}?targetId=${targetId}` : api.messages.list.path;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch messages");
-      return await res.json();
+      const data: MessageWithUser[] = await res.json();
+      
+      // Local notification logic
+      if (data.length > 0) {
+        const lastMsg = data[data.length - 1];
+        const lastNotifiedId = localStorage.getItem('lastNotifiedMsgId');
+        
+        // Use a more robust way to get current user ID
+        const currentUserId = (window as any).KSB_USER_ID;
+        
+        // Only notify if it's a new message and not from the current user
+        if (lastNotifiedId !== String(lastMsg.id) && currentUserId && lastMsg.userId !== currentUserId) { 
+           if ("Notification" in window && Notification.permission === "granted") {
+             new Notification(`Yeni Mesaj: ${lastMsg.sender.username}`, {
+               body: lastMsg.content,
+               icon: lastMsg.sender.avatarUrl || undefined
+             });
+             localStorage.setItem('lastNotifiedMsgId', String(lastMsg.id));
+           }
+        }
+      }
+      
+      return data;
     },
     refetchInterval: 3000, // Slower interval to prevent lag
     staleTime: 1000,

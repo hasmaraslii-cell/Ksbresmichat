@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCurrentUser } from "@/hooks/use-ksb";
 import { UserProfile } from "@/components/UserProfile";
 import { ChatInterface } from "@/components/ChatInterface";
@@ -11,6 +11,12 @@ export default function Home() {
   const { data: user, isLoading } = useCurrentUser();
   const [activeTab, setActiveTab] = useState<"chat" | "dm" | "settings">("chat");
   const [targetUser, setTargetUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      (window as any).KSB_USER_ID = user.id;
+    }
+  }, [user]);
 
   if (isLoading) return null;
   if (!user) return <Auth />;
