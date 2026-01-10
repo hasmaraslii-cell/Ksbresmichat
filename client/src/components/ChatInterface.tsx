@@ -19,6 +19,7 @@ export function ChatInterface({ targetUser }: { targetUser?: any }) {
   const { data: messages = [] } = useMessages(targetUser?.id);
   const { mutate: sendMessage } = useSendMessage();
   const [optimisticMessages, setOptimisticMessages] = useState<any[]>([]);
+  const [inputText, setInputText] = useState("");
 
   // Update optimistic messages when server data changes
   useEffect(() => {
